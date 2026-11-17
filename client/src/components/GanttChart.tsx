@@ -6,34 +6,31 @@ interface Props {
 }
 
 export default function GanttChart({ projects }: Props) {
-  // Sort projects by start date (recent first) and compute fixed 12-month timeline
-  const { sortedProjects, months, totalDays, timelineStart } = useMemo(() => {
+  const { sortedProjects, months, totalDays, timelineStart, timelineEnd } = useMemo(() => {
     if (projects.length === 0) {
       return {
         sortedProjects: [],
         months: [] as { label: string; startPct: number; widthPct: number }[],
         totalDays: 1,
         timelineStart: new Date(),
+        timelineEnd: new Date(),
       };
     }
 
-    // Sort by start date ascending (recent to future)
     const sorted = [...projects].sort(
       (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
     );
 
-    // Timeline starts at first project's start month, spans exactly 12 months
+    // Use sorted to get the first element of the array
     const firstStart = new Date(sorted.startDate);
     const tStart = new Date(firstStart.getFullYear(), firstStart.getMonth(), 1);
     const tEnd = new Date(tStart.getFullYear(), tStart.getMonth() + 12, 0);
     const total = daysBetween(tStart, tEnd);
 
-    // Build month markers
     const monthList: { label: string; startPct: number; widthPct: number }[] = [];
-    const cursor = new Date(tStart);
     for (let i = 0; i < 12; i++) {
-      const mStart = new Date(cursor);
-      const mEnd = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0);
+      const mStart = new Date(tStart.getFullYear(), tStart.getMonth() + i, 1);
+      const mEnd = new Date(tStart.getFullYear(), tStart.getMonth() + i + 1, 0);
       const clampedEnd = mEnd > tEnd ? tEnd : mEnd;
       const startPct = (daysBetween(tStart, mStart) / total) * 100;
       const widthPct = (daysBetween(mStart, clampedEnd) / total) * 100;
@@ -42,10 +39,9 @@ export default function GanttChart({ projects }: Props) {
         startPct,
         widthPct,
       });
-      cursor.setMonth(cursor.getMonth() + 1);
     }
 
-    return { sortedProjects: sorted, months: monthList, totalDays: total, timelineStart: tStart };
+    return { sortedProjects: sorted, months: monthList, totalDays: total, timelineStart: tStart, timelineEnd: tEnd };
   }, [projects]);
 
   const statusBarColor = (status: string) => {
@@ -65,8 +61,6 @@ export default function GanttChart({ projects }: Props) {
       </div>
     );
   }
-
-  const timelineEnd = new Date(timelineStart.getFullYear(), timelineStart.getMonth() + 12, 0);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200">
@@ -97,12 +91,11 @@ export default function GanttChart({ projects }: Props) {
               const pStart = new Date(p.startDate);
               const pEnd = new Date(p.endDate);
 
-              // Clamp bars to the 12-month window
               const clampedStart = pStart < timelineStart ? timelineStart : pStart;
               const clampedEnd = pEnd > timelineEnd ? timelineEnd : pEnd;
 
               if (clampedStart >= timelineEnd || clampedEnd <= timelineStart) {
-                return null; // Outside visible window
+                return null;
               }
 
               const leftPct = Math.max(0, (daysBetween(timelineStart, clampedStart) / totalDays) * 100);
@@ -114,12 +107,9 @@ export default function GanttChart({ projects }: Props) {
                   className="flex items-center border-b border-gray-50 hover:bg-gray-50 transition-colors"
                   style={{ height: "44px" }}
                 >
-                  {/* Project name label */}
                   <div className="w-56 min-w-56 px-4 text-sm text-gray-700 font-medium truncate border-r border-gray-100">
                     {p.name}
                   </div>
-
-                  {/* Bar area */}
                   <div className="flex-1 relative h-full">
                     <div
                       className={`absolute top-2.5 h-5 rounded-full ${statusBarColor(p.status)} opacity-90 hover:opacity-100 transition-opacity cursor-default`}

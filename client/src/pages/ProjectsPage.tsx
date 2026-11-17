@@ -38,9 +38,9 @@ export default function ProjectsPage() {
     });
   }, [projects, filters]);
 
-  // Status counts based on filtered results (only show Ongoing, Completed, Incoming)
+  // Status counts always from ALL projects (not filtered)
   const displayStatuses = ["Ongoing", "Completed", "Incoming"];
-  const statusCounts = filtered.reduce<Record<string, number>>((acc, p) => {
+  const totalStatusCounts = projects.reduce<Record<string, number>>((acc, p) => {
     acc[p.status] = (acc[p.status] || 0) + 1;
     return acc;
   }, {});
@@ -71,10 +71,10 @@ export default function ProjectsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Status Summary Cards — only Ongoing, Completed, Incoming */}
+      {/* Status Summary Cards — always show total counts */}
       <div className="grid grid-cols-3 gap-4">
         {displayStatuses.map((status) => {
-          const count = statusCounts[status] || 0;
+          const count = totalStatusCounts[status] || 0;
           const style = statusStyles[status];
           const isSelected = filters.status === status;
 
