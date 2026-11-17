@@ -17,16 +17,21 @@ export default function GanttChart({ projects }: Props) {
       };
     }
 
+    // Sort by start date ascending (oldest at top, newest at bottom)
     const sorted = [...projects].sort(
       (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
     );
 
-    // Use sorted to get the first element of the array
-    const firstStart = new Date(sorted.startDate);
-    const tStart = new Date(firstStart.getFullYear(), firstStart.getMonth(), 1);
+    // Get the earliest start date across all projects
+    const allStarts = sorted.map((p) => new Date(p.startDate).getTime());
+    const earliestDate = new Date(Math.min(...allStarts));
+
+    // Timeline: snap to first of that month, span exactly 12 months
+    const tStart = new Date(earliestDate.getFullYear(), earliestDate.getMonth(), 1);
     const tEnd = new Date(tStart.getFullYear(), tStart.getMonth() + 12, 0);
     const total = daysBetween(tStart, tEnd);
 
+    // Build 12 month markers
     const monthList: { label: string; startPct: number; widthPct: number }[] = [];
     for (let i = 0; i < 12; i++) {
       const mStart = new Date(tStart.getFullYear(), tStart.getMonth() + i, 1);
