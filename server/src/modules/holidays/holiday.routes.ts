@@ -1,4 +1,3 @@
-
 import { Router } from "express";
 import { prisma } from "../../index";
 
@@ -29,4 +28,3 @@ holidayRoutes.delete("/:id", async (req, res) => {
   await prisma.orgHoliday.delete({ where: { id: Number(req.params.id) } });
   res.json({ success: true });
 });
-

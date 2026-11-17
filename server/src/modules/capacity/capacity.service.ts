@@ -1,4 +1,3 @@
-
 import { prisma } from "../../index";
 import { getWeeklyCalendar, WeekInfo } from "./capacity.helpers";
 
@@ -153,8 +152,6 @@ export async function computeTeamSummary(rangeStart: Date, rangeEnd: Date) {
   return { rangeStart, rangeEnd, employees: summary };
 }
 
-// ── Helpers ──
-
 function getWeeksInRange(start: Date, end: Date, calendar: WeekInfo[]): string[] {
   return calendar
     .filter((w) => {
@@ -205,4 +202,3 @@ function roundTo(n: number, dp: number): number {
   const f = Math.pow(10, dp);
   return Math.round(n * f) / f;
 }
-

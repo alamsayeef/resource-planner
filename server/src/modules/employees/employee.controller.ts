@@ -1,4 +1,3 @@
-
 import { Request, Response } from "express";
 import { prisma } from "../../index";
 
@@ -72,4 +71,3 @@ export async function remove(req: Request, res: Response) {
   });
   res.json({ success: true });
 }
-

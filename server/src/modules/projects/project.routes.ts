@@ -1,4 +1,3 @@
-
 import { Router } from "express";
 import { prisma } from "../../index";
 
@@ -76,4 +75,3 @@ projectRoutes.delete("/:id", async (req, res) => {
   });
   res.json({ success: true });
 });
-

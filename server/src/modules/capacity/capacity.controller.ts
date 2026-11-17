@@ -1,4 +1,3 @@
-
 import { Request, Response } from "express";
 import * as service from "./capacity.service";
 
@@ -36,4 +35,3 @@ export async function getTeamSummary(req: Request, res: Response) {
   const summary = await service.computeTeamSummary(start, end);
   res.json(summary);
 }
-

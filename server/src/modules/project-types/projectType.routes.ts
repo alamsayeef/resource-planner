@@ -1,4 +1,3 @@
-
 import { Router } from "express";
 import { prisma } from "../../index";
 
@@ -35,4 +34,3 @@ projectTypeRoutes.post("/", async (req, res) => {
   });
   res.status(201).json(pt);
 });
-

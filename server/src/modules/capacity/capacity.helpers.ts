@@ -1,4 +1,3 @@
-
 import { prisma } from "../../index";
 
 export interface WeekInfo {
@@ -57,7 +56,7 @@ export async function getWorkingDaysInWeek(weekStart: string): Promise<number> {
     new Date(weekStart),
     new Date(weekStart)
   );
-  return calendar.length > 0 ? calendar[0].workingDays : 5;
+  return calendar.length > 0 ? calendar.workingDays : 5;
 }
 
 function getMonday(date: Date): Date {
@@ -68,4 +67,3 @@ function getMonday(date: Date): Date {
   d.setHours(0, 0, 0, 0);
   return d;
 }
-

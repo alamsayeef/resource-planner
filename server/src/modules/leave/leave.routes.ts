@@ -1,4 +1,3 @@
-
 import { Router } from "express";
 import { prisma } from "../../index";
 
@@ -47,4 +46,3 @@ leaveRoutes.delete("/:id", async (req, res) => {
   await prisma.employeeLeave.delete({ where: { id: Number(req.params.id) } });
   res.json({ success: true });
 });
-

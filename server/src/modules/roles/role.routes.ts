@@ -1,4 +1,3 @@
-
 import { Router } from "express";
 import { prisma } from "../../index";
 
@@ -24,4 +23,3 @@ roleRoutes.put("/:id", async (req, res) => {
   });
   res.json(role);
 });
-

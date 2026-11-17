@@ -1,4 +1,3 @@
-
 import { Router } from "express";
 import { prisma } from "../../index";
 
@@ -68,4 +67,3 @@ assignmentRoutes.delete("/:id", async (req, res) => {
   await prisma.projectAssignment.delete({ where: { id: Number(req.params.id) } });
   res.json({ success: true });
 });
-
