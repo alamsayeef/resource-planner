@@ -1,127 +1,105 @@
 
-# PenTAG Resource Planner — Master Changelog
+# PenTAG Resource Planner — Changelog
 
-All notable changes to project files are tracked here.
-
----
-
-## Legend
-
-- **Status:** `Created` | `Revised` | `Deleted`
-- **Revisions** are numbered sequentially: `REV-001`, `REV-002`, etc.
-- Each revision includes: date, file(s), what changed, why, and a diff where helpful.
+All notable changes to this project will be documented in this file.
 
 ---
 
-## Project Setup — 2026-11-17
+## [0.3.0] — 2026-11-17
 
-### Design Decisions (Pre-Code)
+### Summary
+Built the full Projects tab with cascading filters, paginated data grid, and Gantt timeline chart.
 
-Before any files were created, the following architectural decisions were made:
+### Added — Frontend
+- **ProjectsPage** (`client/src/pages/ProjectsPage.tsx`) — Main projects dashboard composing status cards, filters, grid, and Gantt chart
+- **ProjectFilters** (`client/src/components/ProjectFilters.tsx`) — Cascading dropdown filters for Status, Project Type, PM, PD. Changing an upstream filter resets downstream filters and dynamically limits available options
+- **ProjectGrid** (`client/src/components/ProjectGrid.tsx`) — Data table displaying ID, Project Title, Type, Status, PM, PD, Start Date, End Date. Pagination with 5/10/25/50 rows per page
+- **GanttChart** (`client/src/components/GanttChart.tsx`) — Pure CSS/React timeline chart. Fixed 12-month window starting from earliest project start date. Projects sorted oldest → newest (top to bottom). Colour-coded bars by status. No external charting library
+- **Layout** (`client/src/components/Layout.tsx`) — App shell with header, PenTAG branding, and tab navigation (Projects / Employees)
+- **API helper** (`client/src/lib/api.ts`) — Centralised fetch wrapper with typed interfaces for Project, Employee, ProjectType. Includes CRUD methods for projects
+- **React Router** — Tab-based navigation via `react-router-dom`
+- **React Query** — Data fetching with `@tanstack/react-query`, 30s stale time, single retry
 
-| Decision | Choice | Rationale |
-|---|---|---|
-| Source of truth | Replace complex shared Excel on SharePoint | Excel doesn't scale; web app gives concurrent access, audit trail, and validation |
-| Frontend | React 18 + TypeScript + Vite + Tailwind CSS | Modern, fast, type-safe; Tailwind matches PenTAG brand easily |
-| Backend | Express + TypeScript + Prisma ORM | Lightweight, type-safe end-to-end, Prisma gives auto-generated queries |
-| Database (dev) | SQLite via Prisma | Zero-config, file-based, perfect for local/Codespace dev |
-| Database (prod) | PostgreSQL (Azure) | Production-grade; Prisma makes the switch a one-line config change |
-| Dev environment | GitHub Codespaces | No local Node.js install required (user has no admin rights to install); runs in browser |
-| Working hours | 7.3 hrs/day × 5 days = 36.5 hrs/week | UoE standard contract |
-| Holidays | UK Bank Holidays + UoE closure days | Pre-seeded for 2025–2026 |
-| Font | Outfit (Google Fonts) | User preference |
-| Colour palette | PenTAG greens: #022020, #003c3c, #007d69, #00a87e, #00c896 | User preference |
-| RAG thresholds | GREEN ≤80%, AMBER ≤100%, RED >100% | Standard capacity planning convention |
-| Hosting (future) | Azure (institutional licence) or SharePoint embedded | User has UoE Azure access; SharePoint is fallback |
+### Added — Backend
+- **PM/PD fields** on Project model (`pmId`, `pdId`) — links projects to employees as Project Manager and Project Director
+- **PM/PD relations** on Employee model (`managedProjects`, `directedProjects`)
+- **Project API updated** (`server/src/modules/projects/project.routes.ts`) — All endpoints now include PM and PD data with select (id, name, email)
+- **Project Types endpoint** exposed via `api.getProjectTypes()`
 
-### Codespaces Resource Estimate
+### Changed — Data
+- **Statuses** changed from Active/Draft/Completed/On Hold/Archived → **Ongoing/Incoming/Completed/Removed**
+- **Project Types** simplified to Project Type 1, Project Type 2, Project Type 3
+- **Projects** renamed to Project Name 1 through Project Name 12, with varied statuses, types, PMs, and PDs
+- **Employees** renamed to Employee 1 through Employee 6
+- **Status cards** now show only Ongoing, Completed, Incoming — counts always reflect total projects regardless of active filters
 
-| Resource | Estimated Usage | Free Tier Limit |
-|---|---|---|
-| Core-hours/month | ~40–50 hrs | 120 hrs |
-| Storage | ~0.5–1 GB | 15 GB |
-
-### Initial File Creation
-
-All 34 files were created on 2026-11-17.
-
-| # | File Path | Status | Notes |
-|---|---|---|---|
-| 1 | `.devcontainer/devcontainer.json` | Created → **Revised ×2** | See REV-001, REV-002 |
-| 2 | `.gitignore` | Created | — |
-| 3 | `package.json` (root) | Created | Monorepo scripts: setup, dev, db:reset, db:studio, build |
-| 4 | `README.md` | Created | Quick start guide + tech stack summary |
-| 5 | `server/.env` | Created | SQLite URL, port 3001, CORS origin |
-| 6 | `server/package.json` | Created | Express, Prisma, Zod, tsx |
-| 7 | `server/tsconfig.json` | Created | ES2022, CommonJS, strict mode |
-| 8 | `server/prisma/schema.prisma` | Created | 11 models: Role, Employee, EmployeeFteHistory, OrgHoliday, EmployeeLeave, ProjectType, RoleBudgetTemplate, Project, ProjectRoleBudget, ProjectAssignment, AppUser, AppConfig |
-| 9 | `server/prisma/seed.ts` | Created | Seeds: 8 config keys, 8 roles, 24 holidays (2025–2026), 4 sample employees, 2 project types (HTA Report, Rapid Review), HTA budget templates, 1 sample project with assignment |
-| 10 | `server/src/index.ts` | Created | Express app entry point, 9 route modules mounted |
-| 11 | `server/src/modules/employees/employee.routes.ts` | Created | GET /, GET /:id, POST /, PUT /:id, DELETE /:id |
-| 12 | `server/src/modules/employees/employee.controller.ts` | Created | CRUD + automatic FTE history tracking on update |
-| 13 | `server/src/modules/roles/role.routes.ts` | Created | GET /, POST /, PUT /:id |
-| 14 | `server/src/modules/project-types/projectType.routes.ts` | Created | GET /, GET /:id, POST / (with nested budget templates) |
-| 15 | `server/src/modules/projects/project.routes.ts` | Created | Full CRUD + auto-copies budget templates from project type on create |
-| 16 | `server/src/modules/assignments/assignment.routes.ts` | Created | CRUD + budget overrun validation on create |
-| 17 | `server/src/modules/leave/leave.routes.ts` | Created | CRUD, filterable by employeeId |
-| 18 | `server/src/modules/holidays/holiday.routes.ts` | Created | GET (filterable by year), POST, DELETE |
-| 19 | `server/src/modules/capacity/capacity.routes.ts` | Created | GET / (team), GET /employee/:id, GET /summary |
-| 20 | `server/src/modules/capacity/capacity.controller.ts` | Created | Parses date range from query params, defaults to 12-week window |
-| 21 | `server/src/modules/capacity/capacity.helpers.ts` | Created | Weekly calendar generator; accounts for holidays; getMonday utility |
-| 22 | `server/src/modules/capacity/capacity.service.ts` | Created | Core capacity engine: gross capacity, leave deduction, load spreading, utilisation %, RAG status, per-project breakdown |
-| 23 | `server/src/modules/config/config.routes.ts` | Created | GET / (all config as key-value), PUT /:key |
-| 24 | `client/package.json` | Created | React 18, React Router, TanStack Query/Table, Lucide icons, date-fns, clsx |
-| 25 | `client/vite.config.ts` | Created | Port 5173, proxy /api → localhost:3001 |
-| 26 | `client/tailwind.config.js` | Created | Outfit font, PenTAG colour palette (5 greens) |
-| 27 | `client/postcss.config.js` | Created | Tailwind + Autoprefixer |
-| 28 | `client/tsconfig.json` | Created | ES2020, ESNext modules, bundler resolution, strict |
-| 29 | `client/index.html` | Created | Loads Outfit from Google Fonts, mounts React |
-| 30 | `client/src/vite-env.d.ts` | Created | Vite type reference |
-| 31 | `client/src/index.css` | Created | Tailwind directives + body defaults (Outfit, #f8faf9 bg, #022020 text) |
-| 32 | `client/src/main.tsx` | Created | React 18 createRoot, StrictMode |
-| 33 | `client/src/App.tsx` | Created | Landing page with API health check (shows Connected/Not connected) |
-| 34 | `CHANGELOG.md` | Created | This file |
+### Fixed
+- **Gantt "Invalid Date" bug** — Array index notation (`sorted[0]`) was being stripped during terminal copy-paste. Replaced with `Math.min(...sorted.map(...))` pattern to reliably extract earliest date
+- **`devcontainer.json` warnings** — Removed `esbenp.prettier-vscode` from default formatter (not pre-installed). Replaced deprecated `javascript.preferences.importModuleSpecifier` with `js/ts.preferences.importModuleSpecifier`
+- **Gantt red "today" line** — Removed per user request
+- **Gantt timeline** — Fixed to 12 months from first project start, does not shift with filters
 
 ---
 
-## Revisions
+## [0.2.0] — 2026-11-17
 
-### REV-001 — 2026-11-17 — `.devcontainer/devcontainer.json`
+### Summary
+Created all 14 backend source files, resolved Node.js v24 compatibility issues, and achieved first successful app launch in GitHub Codespaces.
 
-**Reason:** Codespaces validation warnings on initial creation
+### Added — Backend Source Files
+- `server/src/index.ts` — Express server entry point, CORS, route registration, Prisma client
+- `server/src/modules/employees/employee.routes.ts` — Employee CRUD routes
+- `server/src/modules/employees/employee.controller.ts` — Employee list, getById, create, update, soft-delete with FTE history tracking
+- `server/src/modules/roles/role.routes.ts` — Role CRUD (inline handlers)
+- `server/src/modules/project-types/projectType.routes.ts` — Project type CRUD with budget templates
+- `server/src/modules/projects/project.routes.ts` — Project CRUD with role budget auto-creation from templates
+- `server/src/modules/assignments/assignment.routes.ts` — Assignment CRUD with budget enforcement
+- `server/src/modules/leave/leave.routes.ts` — Leave record CRUD
+- `server/src/modules/holidays/holiday.routes.ts` — Organisation holiday CRUD with year filtering
+- `server/src/modules/capacity/capacity.routes.ts` — Capacity endpoint routing
+- `server/src/modules/capacity/capacity.controller.ts` — Team/employee/summary capacity endpoints
+- `server/src/modules/capacity/capacity.helpers.ts` — Weekly calendar builder, working days calculator, holiday-aware
+- `server/src/modules/capacity/capacity.service.ts` — Full capacity computation engine (gross capacity, leave deductions, load calculation, RAG status, utilisation %)
+- `server/src/modules/config/config.routes.ts` — App configuration key-value CRUD
 
-| # | Change | Before | After |
-|---|---|---|---|
-| 1 | Removed `extensions` array | Listed 5 marketplace extensions: `Prisma.prisma`, `dbaeumer.vscode-eslint`, `esbenp.prettier-vscode`, `bradlc.vscode-tailwindcss`, `ms-vscode.vscode-typescript-next` | Removed entirely — Codespaces flagged them as not in the approved list; they are nice-to-haves and can be installed manually |
-| 2 | Renamed deprecated setting | `typescript.preferences.importModuleSpecifier` | `js/ts.preferences.importModuleSpecifier` |
+### Fixed
+- **Node.js v24 / tsx compatibility** — Codespace defaulted to Node v24 instead of v20, causing ESM resolution errors with tsx. Resolved by using `npx tsx` directly
+- **Missing .env in Codespace** — `.env` file was in `.gitignore` and not pushed. Fixed by creating it manually and setting `DATABASE_URL` via export
+- **Missing `concurrently` package** — Root-level `node_modules` not installed. Fixed by running `npm install` at project root
 
 ---
 
-### REV-002 — 2026-11-17 — `.devcontainer/devcontainer.json`
+## [0.1.0] — 2026-11-17
 
-**Reason:** Codespaces validation error — `esbenp.prettier-vscode` is not a valid value for `editor.defaultFormatter` because the Prettier extension isn't pre-installed in the Codespace image
+### Summary
+Initial project scaffold — database schema, seed data, configuration files, and basic frontend health-check page.
 
-| # | Change | Before | After |
-|---|---|---|---|
-| 1 | Removed `editor.defaultFormatter` | `"editor.defaultFormatter": "esbenp.prettier-vscode"` | Removed — VS Code's built-in formatter handles TypeScript/JSON fine |
+### Added — Project Configuration
+- `.devcontainer/devcontainer.json` — Codespace config with Node.js 20, port forwarding (3001, 5173), VS Code extensions
+- `package.json` (root) — Workspace scripts: `setup`, `dev` (concurrently), `dev:server`, `dev:client`
+- `server/package.json` — Express, Prisma, cors, tsx dependencies
+- `server/tsconfig.json` — TypeScript config for server (ES2022, NodeNext)
+- `client/package.json` — React 18, Vite, React Router, React Query, Tailwind CSS, Axios
+- `client/tsconfig.json` — TypeScript config for client
+- `client/vite.config.ts` — Vite config with API proxy to port 3001
+- `client/tailwind.config.js` — Tailwind with PenTAG brand colours (pentag-dark, pentag-primary, pentag-accent)
+- `client/postcss.config.js` — PostCSS with Tailwind and Autoprefixer
+- `.gitignore` — Node modules, dist, .env, SQLite files
 
-**Cumulative diff (REV-001 + REV-002 combined):**
-```diff
-  "customizations": {
-    "vscode": {
--     "extensions": [
--       "Prisma.prisma",
--       "dbaeumer.vscode-eslint",
--       "esbenp.prettier-vscode",
--       "bradlc.vscode-tailwindcss",
--       "ms-vscode.vscode-typescript-next"
--     ],
-      "settings": {
--       "editor.defaultFormatter": "esbenp.prettier-vscode",
-        "editor.formatOnSave": true,
-        "editor.tabSize": 2,
--       "typescript.preferences.importModuleSpecifier": "relative"
-+       "js/ts.preferences.importModuleSpecifier": "relative"
-      }
-    }
-  }
+### Added — Database
+- `server/prisma/schema.prisma` — Full schema: Role, Employee, EmployeeFteHistory, OrgHoliday, EmployeeLeave, ProjectType, RoleBudgetTemplate, Project, ProjectRoleBudget, ProjectAssignment, AppUser, AppConfig
+- `server/prisma/seed.ts` — Seed script with config values, 8 roles, sample employees, UK bank holidays (2025–2027), UoE closure days, project types with budget templates, sample project and assignments
+
+### Added — Frontend
+- `client/index.html` — HTML entry point
+- `client/src/main.tsx` — React DOM render entry
+- `client/src/App.tsx` — Health-check landing page showing API connection status
+- `client/src/index.css` — Tailwind base/components/utilities imports, Outfit font
+
+### Design Decisions
+- **SQLite** chosen for zero-config development (file-based, no server needed)
+- **GitHub Codespaces** chosen as dev environment (user cannot install Node.js locally)
+- **Prisma ORM** for type-safe database access
+- **Tailwind CSS** for utility-first styling with UoE/PenTAG brand colours
+- **Outfit font** per user preference
+
