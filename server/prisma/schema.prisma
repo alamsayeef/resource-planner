@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -37,9 +36,11 @@ model Employee {
   createdAt  DateTime  @default(now()) @map("created_at")
   updatedAt  DateTime  @updatedAt @map("updated_at")
 
-  fteHistory  EmployeeFteHistory[]
-  leave       EmployeeLeave[]
-  assignments ProjectAssignment[]
+  fteHistory       EmployeeFteHistory[]
+  leave            EmployeeLeave[]
+  assignments      ProjectAssignment[]
+  managedProjects  Project[] @relation("ProjectManager")
+  directedProjects Project[] @relation("ProjectDirector")
 
   @@map("employees")
 }
@@ -125,11 +126,15 @@ model Project {
   startDate          DateTime @map("start_date")
   endDate            DateTime @map("end_date")
   totalBudgetedHours Float?   @map("total_budgeted_hours")
+  pmId               Int?     @map("pm_id")
+  pdId               Int?     @map("pd_id")
   notes              String?
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 
   projectType  ProjectType?        @relation(fields: [projectTypeId], references: [id], onDelete: SetNull)
+  pm           Employee?           @relation("ProjectManager", fields: [pmId], references: [id], onDelete: SetNull)
+  pd           Employee?           @relation("ProjectDirector", fields: [pdId], references: [id], onDelete: SetNull)
   roleBudgets  ProjectRoleBudget[]
   assignments  ProjectAssignment[]
 
@@ -189,4 +194,3 @@ model AppConfig {
 
   @@map("app_config")
 }
-
