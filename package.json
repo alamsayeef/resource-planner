@@ -1,0 +1,20 @@
+
+{
+  "name": "pentag-resource-planner",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PenTAG Resource & Capacity Planning Tool",
+  "scripts": {
+    "setup": "cd server && npm install && cd ../client && npm install",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "db:reset": "cd server && npx prisma db push --force-reset && npx tsx prisma/seed.ts",
+    "db:studio": "cd server && npx prisma studio",
+    "build": "cd client && npm run build && cd ../server && npm run build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
+

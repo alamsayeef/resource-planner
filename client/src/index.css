@@ -1,0 +1,11 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: "Outfit", system-ui, sans-serif;
+  background-color: #f8faf9;
+  color: #022020;
+}
+

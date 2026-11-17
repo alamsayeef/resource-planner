@@ -1,0 +1,28 @@
+
+# Dependencies
+node_modules/
+
+# Database (local dev)
+server/dev.db
+server/dev.db-journal
+
+# Build output
+server/dist/
+client/dist/
+
+# Environment files (local overrides)
+server/.env.local
+
+# Prisma
+server/prisma/migrations/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+*.swp
+*.swo
+

@@ -1,0 +1,192 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Role {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  category    String    @default("Technical")
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  budgetTemplates    RoleBudgetTemplate[]
+  projectRoleBudgets ProjectRoleBudget[]
+  assignments        ProjectAssignment[]
+
+  @@map("roles")
+}
+
+model Employee {
+  id         Int       @id @default(autoincrement())
+  name       String
+  email      String?   @unique
+  department String    @default("PenTAG")
+  fte        Float     @default(1.0)
+  startDate  DateTime? @map("start_date")
+  endDate    DateTime? @map("end_date")
+  isActive   Boolean   @default(true) @map("is_active")
+  notes      String?
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  fteHistory  EmployeeFteHistory[]
+  leave       EmployeeLeave[]
+  assignments ProjectAssignment[]
+
+  @@map("employees")
+}
+
+model EmployeeFteHistory {
+  id            Int       @id @default(autoincrement())
+  employeeId    Int       @map("employee_id")
+  fte           Float
+  effectiveFrom DateTime  @map("effective_from")
+  effectiveTo   DateTime? @map("effective_to")
+  changedBy     String?   @map("changed_by")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId, effectiveFrom])
+  @@map("employee_fte_history")
+}
+
+model OrgHoliday {
+  id          Int      @id @default(autoincrement())
+  name        String
+  date        DateTime @unique
+  holidayType String   @default("Bank Holiday") @map("holiday_type")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("org_holidays")
+}
+
+model EmployeeLeave {
+  id         Int      @id @default(autoincrement())
+  employeeId Int      @map("employee_id")
+  leaveType  String   @default("Annual") @map("leave_type")
+  startDate  DateTime @map("start_date")
+  endDate    DateTime @map("end_date")
+  hours      Float?
+  status     String   @default("Approved")
+  notes      String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId, startDate, endDate])
+  @@map("employee_leave")
+}
+
+model ProjectType {
+  id                   Int      @id @default(autoincrement())
+  name                 String   @unique
+  description          String?
+  defaultDurationWeeks Int?     @map("default_duration_weeks")
+  totalBudgetedHours   Float?   @map("total_budgeted_hours")
+  isActive             Boolean  @default(true) @map("is_active")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  budgetTemplates RoleBudgetTemplate[]
+  projects        Project[]
+
+  @@map("project_types")
+}
+
+model RoleBudgetTemplate {
+  id            Int   @id @default(autoincrement())
+  projectTypeId Int   @map("project_type_id")
+  roleId        Int   @map("role_id")
+  budgetedHours Float @map("budgeted_hours")
+
+  projectType ProjectType @relation(fields: [projectTypeId], references: [id], onDelete: Cascade)
+  role        Role        @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@unique([projectTypeId, roleId])
+  @@map("role_budget_templates")
+}
+
+model Project {
+  id                 Int      @id @default(autoincrement())
+  name               String
+  description        String?
+  projectTypeId      Int?     @map("project_type_id")
+  status             String   @default("Draft")
+  startDate          DateTime @map("start_date")
+  endDate            DateTime @map("end_date")
+  totalBudgetedHours Float?   @map("total_budgeted_hours")
+  notes              String?
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  projectType  ProjectType?        @relation(fields: [projectTypeId], references: [id], onDelete: SetNull)
+  roleBudgets  ProjectRoleBudget[]
+  assignments  ProjectAssignment[]
+
+  @@map("projects")
+}
+
+model ProjectRoleBudget {
+  id            Int   @id @default(autoincrement())
+  projectId     Int   @map("project_id")
+  roleId        Int   @map("role_id")
+  budgetedHours Float @map("budgeted_hours")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  role    Role    @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@unique([projectId, roleId])
+  @@map("project_role_budgets")
+}
+
+model ProjectAssignment {
+  id             Int      @id @default(autoincrement())
+  projectId      Int      @map("project_id")
+  employeeId     Int      @map("employee_id")
+  roleId         Int      @map("role_id")
+  allocatedHours Float    @map("allocated_hours")
+  startDate      DateTime @map("start_date")
+  endDate        DateTime @map("end_date")
+  notes          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  project  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  role     Role     @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@unique([projectId, employeeId, roleId])
+  @@map("project_assignments")
+}
+
+model AppUser {
+  id          Int      @id @default(autoincrement())
+  email       String   @unique
+  displayName String   @map("display_name")
+  role        String   @default("Viewer")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("app_users")
+}
+
+model AppConfig {
+  key         String   @id
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("app_config")
+}
+
