@@ -42,17 +42,16 @@ async function main() {
       create: r,
     });
   }
-  const roles = await prisma.role.findMany();
   console.log("  ✓ Roles seeded");
 
   // ── Employees ──
   const employeeData = [
-    { name: "Alice Johnson",  email: "a.johnson@exeter.ac.uk",  fte: 1.0 },
-    { name: "Bob Smith",      email: "b.smith@exeter.ac.uk",    fte: 0.8 },
-    { name: "Carol Williams", email: "c.williams@exeter.ac.uk", fte: 1.0 },
-    { name: "David Brown",    email: "d.brown@exeter.ac.uk",    fte: 0.6 },
-    { name: "Emma Davis",     email: "e.davis@exeter.ac.uk",    fte: 1.0 },
-    { name: "Frank Miller",   email: "f.miller@exeter.ac.uk",   fte: 0.5 },
+    { name: "Employee 1", email: "employee1@exeter.ac.uk", fte: 1.0 },
+    { name: "Employee 2", email: "employee2@exeter.ac.uk", fte: 0.8 },
+    { name: "Employee 3", email: "employee3@exeter.ac.uk", fte: 1.0 },
+    { name: "Employee 4", email: "employee4@exeter.ac.uk", fte: 0.6 },
+    { name: "Employee 5", email: "employee5@exeter.ac.uk", fte: 1.0 },
+    { name: "Employee 6", email: "employee6@exeter.ac.uk", fte: 0.5 },
   ];
   for (const e of employeeData) {
     const existing = await prisma.employee.findUnique({ where: { email: e.email } });
@@ -68,30 +67,30 @@ async function main() {
 
   // ── Holidays 2025–2027 ──
   const holidays = [
-    { name: "New Year's Day",        date: "2025-01-01" },
-    { name: "Good Friday",           date: "2025-04-18" },
-    { name: "Easter Monday",         date: "2025-04-21" },
-    { name: "Early May Bank Holiday", date: "2025-05-05" },
-    { name: "Spring Bank Holiday",   date: "2025-05-26" },
-    { name: "Summer Bank Holiday",   date: "2025-08-25" },
-    { name: "Christmas Day",         date: "2025-12-25" },
-    { name: "Boxing Day",            date: "2025-12-26" },
-    { name: "UoE Closure 1",         date: "2025-12-29", type: "UoE Closure" },
-    { name: "UoE Closure 2",         date: "2025-12-30", type: "UoE Closure" },
-    { name: "UoE Closure 3",         date: "2025-12-31", type: "UoE Closure" },
-    { name: "New Year's Day",        date: "2026-01-01" },
-    { name: "Good Friday",           date: "2026-04-03" },
-    { name: "Easter Monday",         date: "2026-04-06" },
-    { name: "Early May Bank Holiday", date: "2026-05-04" },
-    { name: "Spring Bank Holiday",   date: "2026-05-25" },
-    { name: "Summer Bank Holiday",   date: "2026-08-31" },
-    { name: "Christmas Day",         date: "2026-12-25" },
-    { name: "Boxing Day",            date: "2026-12-28" },
-    { name: "UoE Closure 1",         date: "2026-12-29", type: "UoE Closure" },
-    { name: "UoE Closure 2",         date: "2026-12-30", type: "UoE Closure" },
-    { name: "UoE Closure 3",         date: "2026-12-31", type: "UoE Closure" },
-    { name: "New Year's Day",        date: "2027-01-01" },
-    { name: "Good Friday",           date: "2027-03-26" },
+    { name: "New Year's Day",          date: "2025-01-01" },
+    { name: "Good Friday",             date: "2025-04-18" },
+    { name: "Easter Monday",           date: "2025-04-21" },
+    { name: "Early May Bank Holiday",  date: "2025-05-05" },
+    { name: "Spring Bank Holiday",     date: "2025-05-26" },
+    { name: "Summer Bank Holiday",     date: "2025-08-25" },
+    { name: "Christmas Day",           date: "2025-12-25" },
+    { name: "Boxing Day",              date: "2025-12-26" },
+    { name: "UoE Closure 1",           date: "2025-12-29", type: "UoE Closure" },
+    { name: "UoE Closure 2",           date: "2025-12-30", type: "UoE Closure" },
+    { name: "UoE Closure 3",           date: "2025-12-31", type: "UoE Closure" },
+    { name: "New Year's Day",          date: "2026-01-01" },
+    { name: "Good Friday",             date: "2026-04-03" },
+    { name: "Easter Monday",           date: "2026-04-06" },
+    { name: "Early May Bank Holiday",  date: "2026-05-04" },
+    { name: "Spring Bank Holiday",     date: "2026-05-25" },
+    { name: "Summer Bank Holiday",     date: "2026-08-31" },
+    { name: "Christmas Day",           date: "2026-12-25" },
+    { name: "Boxing Day",              date: "2026-12-28" },
+    { name: "UoE Closure 1",           date: "2026-12-29", type: "UoE Closure" },
+    { name: "UoE Closure 2",           date: "2026-12-30", type: "UoE Closure" },
+    { name: "UoE Closure 3",           date: "2026-12-31", type: "UoE Closure" },
+    { name: "New Year's Day",          date: "2027-01-01" },
+    { name: "Good Friday",             date: "2027-03-26" },
   ];
   for (const h of holidays) {
     const d = new Date(h.date);
@@ -105,24 +104,25 @@ async function main() {
   console.log("  ✓ Holidays seeded");
 
   // ── Project Types ──
-  const ptHTA = await prisma.projectType.upsert({
-    where: { name: "HTA Report" },
+  const pt1 = await prisma.projectType.upsert({
+    where: { name: "Project Type 1" },
     update: {},
-    create: { name: "HTA Report", description: "Full health technology assessment", defaultDurationWeeks: 40, totalBudgetedHours: 1200 },
+    create: { name: "Project Type 1", description: "Full health technology assessment", defaultDurationWeeks: 40, totalBudgetedHours: 1200 },
   });
-  const ptRR = await prisma.projectType.upsert({
-    where: { name: "Rapid Review" },
+  const pt2 = await prisma.projectType.upsert({
+    where: { name: "Project Type 2" },
     update: {},
-    create: { name: "Rapid Review", description: "Short-turnaround evidence review", defaultDurationWeeks: 12, totalBudgetedHours: 300 },
+    create: { name: "Project Type 2", description: "Short-turnaround evidence review", defaultDurationWeeks: 12, totalBudgetedHours: 300 },
   });
-  const ptER = await prisma.projectType.upsert({
-    where: { name: "Evidence Review" },
+  const pt3 = await prisma.projectType.upsert({
+    where: { name: "Project Type 3" },
     update: {},
-    create: { name: "Evidence Review", description: "Systematic evidence review", defaultDurationWeeks: 26, totalBudgetedHours: 600 },
+    create: { name: "Project Type 3", description: "Systematic evidence review", defaultDurationWeeks: 26, totalBudgetedHours: 600 },
   });
   console.log("  ✓ Project types seeded");
 
-  // ── Budget Templates (HTA) ──
+  // ── Budget Templates ──
+  const roles = await prisma.role.findMany();
   const heRole = roles.find(r => r.name === "Health Economist");
   const srRole = roles.find(r => r.name === "Systematic Reviewer");
   const stRole = roles.find(r => r.name === "Statistician");
@@ -132,17 +132,17 @@ async function main() {
   const caRole = roles.find(r => r.name === "Clinical Advisor");
   const qaRole = roles.find(r => r.name === "Quality Assurance");
 
-  const htaTemplates = [
-    { projectTypeId: ptHTA.id, roleId: heRole!.id, budgetedHours: 350 },
-    { projectTypeId: ptHTA.id, roleId: srRole!.id, budgetedHours: 300 },
-    { projectTypeId: ptHTA.id, roleId: stRole!.id, budgetedHours: 150 },
-    { projectTypeId: ptHTA.id, roleId: isRole!.id, budgetedHours: 100 },
-    { projectTypeId: ptHTA.id, roleId: plRole!.id, budgetedHours: 120 },
-    { projectTypeId: ptHTA.id, roleId: adRole!.id, budgetedHours: 50 },
-    { projectTypeId: ptHTA.id, roleId: caRole!.id, budgetedHours: 80 },
-    { projectTypeId: ptHTA.id, roleId: qaRole!.id, budgetedHours: 50 },
+  const templates = [
+    { projectTypeId: pt1.id, roleId: heRole!.id, budgetedHours: 350 },
+    { projectTypeId: pt1.id, roleId: srRole!.id, budgetedHours: 300 },
+    { projectTypeId: pt1.id, roleId: stRole!.id, budgetedHours: 150 },
+    { projectTypeId: pt1.id, roleId: isRole!.id, budgetedHours: 100 },
+    { projectTypeId: pt1.id, roleId: plRole!.id, budgetedHours: 120 },
+    { projectTypeId: pt1.id, roleId: adRole!.id, budgetedHours: 50 },
+    { projectTypeId: pt1.id, roleId: caRole!.id, budgetedHours: 80 },
+    { projectTypeId: pt1.id, roleId: qaRole!.id, budgetedHours: 50 },
   ];
-  for (const t of htaTemplates) {
+  for (const t of templates) {
     const existing = await prisma.roleBudgetTemplate.findUnique({
       where: { projectTypeId_roleId: { projectTypeId: t.projectTypeId, roleId: t.roleId } },
     });
@@ -151,101 +151,132 @@ async function main() {
   console.log("  ✓ Budget templates seeded");
 
   // ── Sample Projects ──
-  const alice = employees.find(e => e.name === "Alice Johnson")!;
-  const bob = employees.find(e => e.name === "Bob Smith")!;
-  const carol = employees.find(e => e.name === "Carol Williams")!;
-  const emma = employees.find(e => e.name === "Emma Davis")!;
+  const emp1 = employees.find(e => e.name === "Employee 1")!;
+  const emp2 = employees.find(e => e.name === "Employee 2")!;
+  const emp3 = employees.find(e => e.name === "Employee 3")!;
+  const emp4 = employees.find(e => e.name === "Employee 4")!;
+  const emp5 = employees.find(e => e.name === "Employee 5")!;
 
   const projects = [
     {
-      name: "Abiraterone for Prostate Cancer",
-      projectTypeId: ptHTA.id,
-      status: "Active",
+      name: "Project Name 1",
+      projectTypeId: pt1.id,
+      status: "Ongoing",
       startDate: new Date("2026-09-01"),
       endDate: new Date("2027-06-30"),
       totalBudgetedHours: 1200,
-      pmId: alice.id,
-      pdId: carol.id,
+      pmId: emp1.id,
+      pdId: emp3.id,
     },
     {
-      name: "Dupilumab for Eczema",
-      projectTypeId: ptHTA.id,
-      status: "Active",
+      name: "Project Name 2",
+      projectTypeId: pt1.id,
+      status: "Ongoing",
       startDate: new Date("2026-10-15"),
       endDate: new Date("2027-08-15"),
       totalBudgetedHours: 1200,
-      pmId: bob.id,
-      pdId: emma.id,
+      pmId: emp2.id,
+      pdId: emp5.id,
     },
     {
-      name: "AI in Diagnostics Review",
-      projectTypeId: ptRR.id,
-      status: "Active",
+      name: "Project Name 3",
+      projectTypeId: pt2.id,
+      status: "Ongoing",
       startDate: new Date("2026-11-01"),
       endDate: new Date("2027-01-31"),
       totalBudgetedHours: 300,
-      pmId: carol.id,
-      pdId: alice.id,
+      pmId: emp3.id,
+      pdId: emp1.id,
     },
     {
-      name: "Gene Therapy Cost-Effectiveness",
-      projectTypeId: ptER.id,
-      status: "Draft",
+      name: "Project Name 4",
+      projectTypeId: pt3.id,
+      status: "Incoming",
       startDate: new Date("2027-01-15"),
       endDate: new Date("2027-07-15"),
       totalBudgetedHours: 600,
-      pmId: emma.id,
-      pdId: alice.id,
+      pmId: emp5.id,
+      pdId: emp1.id,
     },
     {
-      name: "Pembrolizumab for Lung Cancer",
-      projectTypeId: ptHTA.id,
-      status: "Draft",
+      name: "Project Name 5",
+      projectTypeId: pt1.id,
+      status: "Incoming",
       startDate: new Date("2027-02-01"),
       endDate: new Date("2027-11-30"),
       totalBudgetedHours: 1200,
-      pmId: alice.id,
-      pdId: bob.id,
+      pmId: emp1.id,
+      pdId: emp2.id,
     },
     {
-      name: "Digital CBT Evidence Review",
-      projectTypeId: ptRR.id,
+      name: "Project Name 6",
+      projectTypeId: pt2.id,
       status: "Completed",
       startDate: new Date("2026-03-01"),
       endDate: new Date("2026-05-31"),
       totalBudgetedHours: 300,
-      pmId: bob.id,
-      pdId: carol.id,
+      pmId: emp2.id,
+      pdId: emp3.id,
     },
     {
-      name: "Biosimilars Market Assessment",
-      projectTypeId: ptER.id,
+      name: "Project Name 7",
+      projectTypeId: pt3.id,
       status: "Completed",
       startDate: new Date("2026-01-10"),
       endDate: new Date("2026-07-10"),
       totalBudgetedHours: 600,
-      pmId: carol.id,
-      pdId: emma.id,
+      pmId: emp3.id,
+      pdId: emp5.id,
     },
     {
-      name: "Trastuzumab Deruxtecan HTA",
-      projectTypeId: ptHTA.id,
-      status: "On Hold",
+      name: "Project Name 8",
+      projectTypeId: pt1.id,
+      status: "Removed",
       startDate: new Date("2026-06-01"),
       endDate: new Date("2027-03-31"),
       totalBudgetedHours: 1200,
-      pmId: emma.id,
-      pdId: bob.id,
+      pmId: emp5.id,
+      pdId: emp2.id,
     },
     {
-      name: "Obesity Pharmacotherapy Review",
-      projectTypeId: ptER.id,
-      status: "Archived",
+      name: "Project Name 9",
+      projectTypeId: pt3.id,
+      status: "Removed",
       startDate: new Date("2025-09-01"),
       endDate: new Date("2026-03-01"),
       totalBudgetedHours: 600,
-      pmId: alice.id,
-      pdId: emma.id,
+      pmId: emp1.id,
+      pdId: emp5.id,
+    },
+    {
+      name: "Project Name 10",
+      projectTypeId: pt2.id,
+      status: "Ongoing",
+      startDate: new Date("2026-08-01"),
+      endDate: new Date("2026-12-31"),
+      totalBudgetedHours: 300,
+      pmId: emp4.id,
+      pdId: emp3.id,
+    },
+    {
+      name: "Project Name 11",
+      projectTypeId: pt3.id,
+      status: "Incoming",
+      startDate: new Date("2027-03-01"),
+      endDate: new Date("2027-09-30"),
+      totalBudgetedHours: 600,
+      pmId: emp3.id,
+      pdId: emp4.id,
+    },
+    {
+      name: "Project Name 12",
+      projectTypeId: pt1.id,
+      status: "Completed",
+      startDate: new Date("2025-11-01"),
+      endDate: new Date("2026-08-30"),
+      totalBudgetedHours: 1200,
+      pmId: emp4.id,
+      pdId: emp1.id,
     },
   ];
 
@@ -256,55 +287,6 @@ async function main() {
     }
   }
   console.log("  ✓ Projects seeded");
-
-  // ── Sample Assignments ──
-  const allProjects = await prisma.project.findMany();
-  const proj1 = allProjects.find(p => p.name === "Abiraterone for Prostate Cancer");
-  const proj2 = allProjects.find(p => p.name === "Dupilumab for Eczema");
-  const proj3 = allProjects.find(p => p.name === "AI in Diagnostics Review");
-
-  if (proj1 && heRole && srRole) {
-    const existing = await prisma.projectAssignment.findFirst({ where: { projectId: proj1.id } });
-    if (!existing) {
-      await prisma.projectAssignment.create({
-        data: {
-          projectId: proj1.id, employeeId: alice.id, roleId: heRole.id,
-          allocatedHours: 300, startDate: proj1.startDate, endDate: proj1.endDate,
-        },
-      });
-      await prisma.projectAssignment.create({
-        data: {
-          projectId: proj1.id, employeeId: bob.id, roleId: srRole.id,
-          allocatedHours: 250, startDate: proj1.startDate, endDate: proj1.endDate,
-        },
-      });
-    }
-  }
-
-  if (proj2 && heRole) {
-    const existing = await prisma.projectAssignment.findFirst({ where: { projectId: proj2.id } });
-    if (!existing) {
-      await prisma.projectAssignment.create({
-        data: {
-          projectId: proj2.id, employeeId: carol.id, roleId: heRole.id,
-          allocatedHours: 350, startDate: proj2.startDate, endDate: proj2.endDate,
-        },
-      });
-    }
-  }
-
-  if (proj3 && srRole) {
-    const existing = await prisma.projectAssignment.findFirst({ where: { projectId: proj3.id } });
-    if (!existing) {
-      await prisma.projectAssignment.create({
-        data: {
-          projectId: proj3.id, employeeId: emma.id, roleId: srRole.id,
-          allocatedHours: 200, startDate: proj3.startDate, endDate: proj3.endDate,
-        },
-      });
-    }
-  }
-  console.log("  ✓ Assignments seeded");
 
   console.log("Database seeded successfully!");
 }
