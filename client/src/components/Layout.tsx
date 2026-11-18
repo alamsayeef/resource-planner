@@ -1,8 +1,10 @@
 import { NavLink, Outlet } from "react-router-dom";
 
 const tabs = [
-  { label: "Projects", to: "/projects" },
-  { label: "Employees", to: "/employees" },
+  { label: "Overview", to: "/overview" },
+  { label: "Project", to: "/project" },
+  { label: "Employee", to: "/employee" },
+  { label: "Input", to: "/input" },
 ];
 
 export default function Layout() {

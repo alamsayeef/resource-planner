@@ -10,6 +10,7 @@ import { leaveRoutes } from "./modules/leave/leave.routes";
 import { holidayRoutes } from "./modules/holidays/holiday.routes";
 import { capacityRoutes } from "./modules/capacity/capacity.routes";
 import { configRoutes } from "./modules/config/config.routes";
+import { planningRoutes } from "./modules/planning/planning.routes";
 
 export const prisma = new PrismaClient();
 const app = express();
@@ -31,6 +32,8 @@ app.use("/api/leave",         leaveRoutes);
 app.use("/api/holidays",      holidayRoutes);
 app.use("/api/capacity",      capacityRoutes);
 app.use("/api/config",        configRoutes);
+
+app.use("/api/planning", planningRoutes);
 
 app.listen(PORT, () => {
   console.log("PenTAG Resource Planner API running on http://localhost:" + PORT);

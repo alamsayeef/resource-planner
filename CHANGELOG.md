@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.4.0] — 2026-11-18
+
+### Summary
+Renamed Projects tab to Overview. Added Project, Employee and Input tabs with a role/hours-based capacity model.
+
+### Added
+- **Project tab** — pick status, then project; shows type, dates, PM, PD and who holds which role, with role hours, FTE-adjusted available hours and load
+- **Employee tab** — pick employee + status (Ongoing/Incoming/Completed); card 1 lists their projects, card 2 is a 12-month capacity heatmap (utilisation RAG)
+- **Input tab** — edit employees (primary role, active/inactive, FTE, personal holiday date ranges) and per-project-type hours for Role 1-4, PM and PD (default 50h each)
+- **Planning API** — `/api/planning/project/:id`, `/api/planning/employee/:id?status=`
+- `PUT /api/project-types/:id`, `GET /api/employees?all=true`
+- Schema: `Employee.primaryRoleId`, `ProjectType.pmHours`, `ProjectType.pdHours`
+
+### Changed
+- Tab "Projects" renamed "Overview" (route `/overview`)
+- Roles replaced with Role 1-4; budget templates seeded at 50h per role per type; seed now assigns employees to roles and adds sample leave
+
+---
+
 ## [0.3.0] — 2026-11-17
 
 ### Summary

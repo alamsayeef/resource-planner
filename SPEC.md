@@ -1,7 +1,7 @@
 # PenTAG Resource Planner — Specification
 
-**Version:** 0.3.0
-**Last Updated:** 2026-11-17
+**Version:** 0.4.0
+**Last Updated:** 2026-11-18
 **Author:** Sayeef / Exeter AI Assistant
 
 ---
@@ -216,3 +216,23 @@ A web-based resource and capacity planning tool for PenTAG (Peninsula Technology
 | 5 | Assignment management UI | 🔲 Planned |
 | 6 | Authentication (Azure AD) | 🔲 Planned |
 | 7 | Deployment to Azure | 🔲 Planned |
+
+
+---
+
+## 11. Planning Logic (v0.4.0)
+
+### 11.1 Tabs
+Overview (former Projects tab) · Project · Employee · Input. Tabs are independent (no cross-navigation).
+
+### 11.2 Hours allocation
+- Roles are fixed: Role 1-4. Hours per role per project type are edited on the Input tab (default 50).
+- PM and PD have their own separate hours per project type (default 50) and are given to the project's PM / PD.
+- Role hours are split equally between all employees assigned to that role on the project. A PM/PD who also holds a technical role counts as one of the holders.
+- An employee's total hours on a project are spread equally across their working days within the project dates.
+- Working days = Mon-Fri minus public/UoE closure days minus the employee's personal leave.
+
+### 11.3 Capacity
+- Monthly available hours = FTE x standard hours/day x working days in the month.
+- Utilisation = load / available. RAG: GREEN <= 80%, AMBER <= 100%, RED > 100%, n/a if no available hours.
+- Heatmap spans 12 months from the earliest project start within the selected status.

@@ -2,6 +2,9 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Layout from "./components/Layout";
 import ProjectsPage from "./pages/ProjectsPage";
+import ProjectDetailPage from "./pages/ProjectDetailPage";
+import EmployeePage from "./pages/EmployeePage";
+import InputPage from "./pages/InputPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,9 +21,11 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route element={<Layout />}>
-            <Route path="/projects" element={<ProjectsPage />} />
-            {/* Employee tab placeholder — coming later */}
-            <Route path="*" element={<Navigate to="/projects" replace />} />
+            <Route path="/overview" element={<ProjectsPage />} />
+            <Route path="/project" element={<ProjectDetailPage />} />
+            <Route path="/employee" element={<EmployeePage />} />
+            <Route path="/input" element={<InputPage />} />
+            <Route path="*" element={<Navigate to="/overview" replace />} />
           </Route>
         </Routes>
       </BrowserRouter>

@@ -26,14 +26,10 @@ async function main() {
 
   // ── Roles ──
   const roleNames = [
-    { name: "Health Economist",       category: "Technical" },
-    { name: "Systematic Reviewer",    category: "Technical" },
-    { name: "Statistician",           category: "Technical" },
-    { name: "Information Specialist", category: "Technical" },
-    { name: "Project Lead",           category: "Management" },
-    { name: "Administrator",          category: "Support" },
-    { name: "Clinical Advisor",       category: "Advisory" },
-    { name: "Quality Assurance",      category: "Review" },
+    { name: "Role 1", category: "Technical" },
+    { name: "Role 2", category: "Technical" },
+    { name: "Role 3", category: "Technical" },
+    { name: "Role 4", category: "Technical" },
   ];
   for (const r of roleNames) {
     await prisma.role.upsert({
@@ -122,33 +118,17 @@ async function main() {
   console.log("  ✓ Project types seeded");
 
   // ── Budget Templates ──
-  const roles = await prisma.role.findMany();
-  const heRole = roles.find(r => r.name === "Health Economist");
-  const srRole = roles.find(r => r.name === "Systematic Reviewer");
-  const stRole = roles.find(r => r.name === "Statistician");
-  const isRole = roles.find(r => r.name === "Information Specialist");
-  const plRole = roles.find(r => r.name === "Project Lead");
-  const adRole = roles.find(r => r.name === "Administrator");
-  const caRole = roles.find(r => r.name === "Clinical Advisor");
-  const qaRole = roles.find(r => r.name === "Quality Assurance");
-
-  const templates = [
-    { projectTypeId: pt1.id, roleId: heRole!.id, budgetedHours: 350 },
-    { projectTypeId: pt1.id, roleId: srRole!.id, budgetedHours: 300 },
-    { projectTypeId: pt1.id, roleId: stRole!.id, budgetedHours: 150 },
-    { projectTypeId: pt1.id, roleId: isRole!.id, budgetedHours: 100 },
-    { projectTypeId: pt1.id, roleId: plRole!.id, budgetedHours: 120 },
-    { projectTypeId: pt1.id, roleId: adRole!.id, budgetedHours: 50 },
-    { projectTypeId: pt1.id, roleId: caRole!.id, budgetedHours: 80 },
-    { projectTypeId: pt1.id, roleId: qaRole!.id, budgetedHours: 50 },
-  ];
-  for (const t of templates) {
-    const existing = await prisma.roleBudgetTemplate.findUnique({
-      where: { projectTypeId_roleId: { projectTypeId: t.projectTypeId, roleId: t.roleId } },
-    });
-    if (!existing) await prisma.roleBudgetTemplate.create({ data: t });
+  const roles = await prisma.role.findMany({ orderBy: { name: "asc" } });
+  for (const t of [pt1, pt2, pt3]) {
+    for (const r of roles) {
+      await prisma.roleBudgetTemplate.upsert({
+        where: { projectTypeId_roleId: { projectTypeId: t.id, roleId: r.id } },
+        update: {},
+        create: { projectTypeId: t.id, roleId: r.id, budgetedHours: 50 },
+      });
+    }
   }
-  console.log("  ✓ Budget templates seeded");
+  console.log("  Budget templates seeded (Role 1-4, 50h each)");
 
   // ── Sample Projects ──
   const emp1 = employees.find(e => e.name === "Employee 1")!;
@@ -287,6 +267,60 @@ async function main() {
     }
   }
   console.log("  ✓ Projects seeded");
+
+  // ── Primary roles, project assignments, sample leave ──
+  const roleRows = await prisma.role.findMany();
+  const roleId = (n: string) => roleRows.find((r) => r.name === n)!.id;
+  const primary: Record<string, string> = {
+    "Employee 1": "Role 1", "Employee 2": "Role 1", "Employee 3": "Role 2",
+    "Employee 4": "Role 3", "Employee 5": "Role 4", "Employee 6": "Role 2",
+  };
+  const allEmployees = await prisma.employee.findMany();
+  for (const e of allEmployees) {
+    const rn = primary[e.name];
+    if (rn) await prisma.employee.update({ where: { id: e.id }, data: { primaryRoleId: roleId(rn) } });
+  }
+
+  const upsertAssignment = async (p: { id: number; startDate: Date; endDate: Date }, employeeId: number, rId: number) => {
+    await prisma.projectAssignment.upsert({
+      where: { projectId_employeeId_roleId: { projectId: p.id, employeeId, roleId: rId } },
+      update: {},
+      create: { projectId: p.id, employeeId, roleId: rId, allocatedHours: 0, startDate: p.startDate, endDate: p.endDate },
+    });
+  };
+
+  const holders: Record<string, string[]> = {
+    "Role 1": ["Employee 1", "Employee 2"],
+    "Role 2": ["Employee 3", "Employee 6"],
+    "Role 3": ["Employee 4"],
+    "Role 4": ["Employee 5"],
+  };
+  const liveProjects = await prisma.project.findMany({ orderBy: { id: "asc" } });
+  let counter = 0;
+  for (const p of liveProjects) {
+    if (p.status === "Removed") continue;
+    counter++;
+    for (const rn of Object.keys(holders)) {
+      const names = counter % 2 === 0 ? holders[rn] : holders[rn].slice(0, 1);
+      for (const en of names) {
+        const emp = allEmployees.find((e) => e.name === en);
+        if (emp) await upsertAssignment(p, emp.id, roleId(rn));
+      }
+    }
+    // some PMs also hold a technical role (shared with the others)
+    if (p.pmId && counter % 3 === 0) await upsertAssignment(p, p.pmId, roleId("Role 1"));
+  }
+  console.log("  Assignments seeded");
+
+  const e1 = allEmployees.find((e) => e.name === "Employee 1");
+  const e3 = allEmployees.find((e) => e.name === "Employee 3");
+  if (e1 && (await prisma.employeeLeave.count({ where: { employeeId: e1.id } })) === 0) {
+    await prisma.employeeLeave.create({ data: { employeeId: e1.id, leaveType: "Annual", startDate: new Date("2026-12-21"), endDate: new Date("2026-12-24") } });
+  }
+  if (e3 && (await prisma.employeeLeave.count({ where: { employeeId: e3.id } })) === 0) {
+    await prisma.employeeLeave.create({ data: { employeeId: e3.id, leaveType: "Annual", startDate: new Date("2027-02-15"), endDate: new Date("2027-02-19") } });
+  }
+  console.log("  Leave seeded");
 
   console.log("Database seeded successfully!");
 }

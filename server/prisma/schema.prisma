@@ -20,6 +20,8 @@ model Role {
   projectRoleBudgets ProjectRoleBudget[]
   assignments        ProjectAssignment[]
 
+  primaryEmployees Employee[] @relation("EmployeePrimaryRole")
+
   @@map("roles")
 }
 
@@ -41,6 +43,9 @@ model Employee {
   assignments      ProjectAssignment[]
   managedProjects  Project[] @relation("ProjectManager")
   directedProjects Project[] @relation("ProjectDirector")
+
+  primaryRoleId Int? @map("primary_role_id")
+  primaryRole Role? @relation("EmployeePrimaryRole", fields: [primaryRoleId], references: [id], onDelete: SetNull)
 
   @@map("employees")
 }
@@ -100,6 +105,9 @@ model ProjectType {
 
   budgetTemplates RoleBudgetTemplate[]
   projects        Project[]
+
+  pmHours Float @default(50) @map("pm_hours")
+  pdHours Float @default(50) @map("pd_hours")
 
   @@map("project_types")
 }

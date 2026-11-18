@@ -3,8 +3,8 @@ import { prisma } from "../../index";
 
 export async function list(_req: Request, res: Response) {
   const employees = await prisma.employee.findMany({
-    where: { isActive: true },
-    include: { assignments: { include: { project: true, role: true } } },
+    where: _req.query.all === "true" ? {} : { isActive: true },
+    include: { assignments: { include: { project: true, role: true } }, primaryRole: true, leave: { orderBy: { startDate: "asc" } } },
     orderBy: { name: "asc" },
   });
   res.json(employees);
@@ -24,9 +24,9 @@ export async function getById(req: Request, res: Response) {
 }
 
 export async function create(req: Request, res: Response) {
-  const { name, email, department, fte, notes } = req.body;
+  const { name, email, department, fte, notes, primaryRoleId } = req.body;
   const employee = await prisma.employee.create({
-    data: { name, email, department, fte: fte ?? 1.0, notes },
+    data: { name, email, department, fte: fte ?? 1.0, notes, primaryRoleId },
   });
   await prisma.employeeFteHistory.create({
     data: { employeeId: employee.id, fte: employee.fte, effectiveFrom: new Date() },
@@ -36,7 +36,7 @@ export async function create(req: Request, res: Response) {
 
 export async function update(req: Request, res: Response) {
   const id = Number(req.params.id);
-  const { name, email, department, fte, notes, isActive } = req.body;
+  const { name, email, department, fte, notes, isActive, primaryRoleId } = req.body;
 
   if (fte !== undefined) {
     const current = await prisma.employee.findUnique({ where: { id } });
@@ -59,7 +59,7 @@ export async function update(req: Request, res: Response) {
 
   const employee = await prisma.employee.update({
     where: { id },
-    data: { name, email, department, fte, notes, isActive },
+    data: { name, email, department, fte, notes, isActive, primaryRoleId },
   });
   res.json(employee);
 }
