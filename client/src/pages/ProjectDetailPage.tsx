@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, PLANNING_STATUSES } from "../lib/api";
-import type { Project, ProjectDetail, ProjectPerson } from "../lib/api";
+import type { Employee, Project, ProjectDetail, ProjectPerson } from "../lib/api";
 
 const selectClass =
   "text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-pentag-accent focus:border-pentag-accent outline-none bg-white disabled:bg-gray-100 disabled:text-gray-400";
@@ -19,13 +19,18 @@ const statusColor = (status: string) => {
   }
 };
 
+type Kind = "lead" | "person" | "add";
+
 interface Row {
   key: string;
+  kind: Kind;
   label: string;
+  roleId?: number;
   roleHours: number | null;
   person: ProjectPerson | null;
   first: boolean;
-  emptyText: string;
+  candidates?: Employee[];
+  unassigned?: boolean;
 }
 
 function LoadCell({ person }: { person: ProjectPerson }) {
@@ -38,10 +43,17 @@ function LoadCell({ person }: { person: ProjectPerson }) {
 export default function ProjectDetailPage() {
   const [status, setStatus] = useState("");
   const [projectId, setProjectId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ["projects"],
     queryFn: api.getProjects,
+  });
+
+  const { data: employees = [] } = useQuery<Employee[]>({
+    queryKey: ["employees"],
+    queryFn: api.getEmployees,
   });
 
   const options = projects
@@ -54,18 +66,46 @@ export default function ProjectDetailPage() {
     enabled: projectId !== "",
   });
 
+  const assign = async (roleId: number, employeeId: number) => {
+    setBusy(true);
+    try {
+      await api.assignEmployee(Number(projectId), employeeId, roleId);
+      await queryClient.invalidateQueries();
+    } catch (e: any) {
+      window.alert(e.message || "Failed to assign");
+    }
+    setBusy(false);
+  };
+
+  const unassign = async (roleId: number, employeeId: number) => {
+    setBusy(true);
+    try {
+      await api.unassignEmployee(Number(projectId), employeeId, roleId);
+      await queryClient.invalidateQueries();
+    } catch (e: any) {
+      window.alert(e.message || "Failed to remove");
+    }
+    setBusy(false);
+  };
+
   const rows: Row[] = [];
   if (detail) {
-    rows.push({ key: "pm", label: "Project Manager (PM)", roleHours: detail.pmHours, person: detail.pm, first: true, emptyText: "Not set" });
-    rows.push({ key: "pd", label: "Project Director (PD)", roleHours: detail.pdHours, person: detail.pd, first: true, emptyText: "Not set" });
     detail.roles.forEach((r) => {
-      if (r.assignees.length === 0) {
-        rows.push({ key: `r${r.roleId}`, label: r.roleName, roleHours: r.roleHours, person: null, first: true, emptyText: "Unassigned" });
-      } else {
-        r.assignees.forEach((a, i) => {
-          rows.push({ key: `r${r.roleId}-${a.employeeId}`, label: r.roleName, roleHours: r.roleHours, person: a, first: i === 0, emptyText: "" });
-        });
+      // PM and PD roles: shown first, held by the project's PM / PD (set on Overview)
+      if (r.systemKey === "PM" || r.systemKey === "PD") {
+        const person = r.systemKey === "PM" ? detail.pm : detail.pd;
+        rows.push({ key: `lead${r.roleId}`, kind: "lead", label: r.roleName, roleId: r.roleId, roleHours: r.roleHours, person, first: true });
+        return;
       }
+      const taken = new Set(r.assignees.map((a) => a.employeeId));
+      const candidates = employees.filter((e) => !taken.has(e.id));
+      r.assignees.forEach((a, i) => {
+        rows.push({ key: `r${r.roleId}-${a.employeeId}`, kind: "person", label: r.roleName, roleId: r.roleId, roleHours: r.roleHours, person: a, first: i === 0 });
+      });
+      rows.push({
+        key: `add${r.roleId}`, kind: "add", label: r.roleName, roleId: r.roleId, roleHours: r.roleHours,
+        person: null, first: r.assignees.length === 0, candidates, unassigned: r.assignees.length === 0,
+      });
     });
   }
 
@@ -111,7 +151,7 @@ export default function ProjectDetailPage() {
         </div>
       )}
 
-      {projectId && isLoading && <div className="text-center py-10 text-gray-400">Loading project…</div>}
+      {projectId && isLoading && !detail && <div className="text-center py-10 text-gray-400">Loading project…</div>}
       {projectId && error && <div className="text-center py-10 text-red-500">Failed to load project details.</div>}
 
       {detail && (
@@ -136,11 +176,15 @@ export default function ProjectDetailPage() {
           {/* Roles card */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-pentag-dark">Roles &amp; Hours</h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-lg font-semibold text-pentag-dark">Roles &amp; Hours</h2>
+                {busy && <span className="text-xs text-pentag-accent animate-pulse">Saving…</span>}
+              </div>
               <p className="text-xs text-gray-400 mt-1">
-                Role hours come from the project type and are split equally between everyone holding the role.
-                Available hours = FTE × daily hours × working days in the project window (minus public and personal holidays).
-                Load = the person's total hours on this project ÷ their available hours.
+                Use the “Add employee” dropdown under each role to assign people, and × to remove them. The PM and PD are
+                changed on the Overview tab. Role hours come from the project type and are split equally between everyone
+                holding the role. Available hours = FTE × daily hours × working days in the project window (minus public and
+                personal holidays).
               </p>
             </div>
             <div className="overflow-x-auto">
@@ -155,6 +199,7 @@ export default function ProjectDetailPage() {
                     <th className="px-6 py-3 font-medium">Total on project</th>
                     <th className="px-6 py-3 font-medium">Available hours</th>
                     <th className="px-6 py-3 font-medium">Load</th>
+                    <th className="px-3 py-3 w-10"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -162,7 +207,23 @@ export default function ProjectDetailPage() {
                     <tr key={r.key} className="hover:bg-gray-50">
                       <td className="px-6 py-3 font-medium text-pentag-dark">{r.first ? r.label : ""}</td>
                       <td className="px-6 py-3 text-gray-600">{r.first && r.roleHours !== null ? r.roleHours.toFixed(1) : ""}</td>
-                      {r.person ? (
+                      {r.kind === "add" ? (
+                        <td className="px-6 py-2" colSpan={7}>
+                          <select
+                            value=""
+                            disabled={busy || !r.candidates || r.candidates.length === 0}
+                            onChange={(e) => { if (e.target.value) assign(r.roleId!, Number(e.target.value)); }}
+                            className={selectClass}
+                          >
+                            <option value="">
+                              {r.unassigned ? "Unassigned — add employee…" : "+ Add employee…"}
+                            </option>
+                            {(r.candidates || []).map((emp) => (
+                              <option key={emp.id} value={String(emp.id)}>{emp.name}</option>
+                            ))}
+                          </select>
+                        </td>
+                      ) : r.person ? (
                         <>
                           <td className="px-6 py-3 text-gray-700">{r.person.name}</td>
                           <td className="px-6 py-3 text-gray-600">{r.person.fte.toFixed(1)}</td>
@@ -170,9 +231,22 @@ export default function ProjectDetailPage() {
                           <td className="px-6 py-3 text-gray-600">{r.person.projectTotalHours.toFixed(1)}</td>
                           <td className="px-6 py-3 text-gray-600">{r.person.availableHours.toFixed(1)}</td>
                           <td className="px-6 py-3"><LoadCell person={r.person} /></td>
+                          <td className="px-3 py-3 text-center">
+                            {r.kind === "person" && (
+                              <button
+                                onClick={() => unassign(r.roleId!, r.person!.employeeId)}
+                                disabled={busy}
+                                className="text-gray-400 hover:text-red-600 disabled:opacity-40"
+                                aria-label="Remove from role"
+                                title="Remove from role"
+                              >
+                                ×
+                              </button>
+                            )}
+                          </td>
                         </>
                       ) : (
-                        <td className="px-6 py-3 text-gray-400 italic" colSpan={6}>{r.emptyText}</td>
+                        <td className="px-6 py-3 text-gray-400 italic" colSpan={7}>Not set (change on Overview tab)</td>
                       )}
                     </tr>
                   ))}

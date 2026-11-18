@@ -17,6 +17,7 @@ export const PLANNING_STATUSES = ["Ongoing", "Incoming", "Completed"];
 export interface Role {
   id: number;
   name: string;
+  systemKey?: string | null;
 }
 
 export interface LeaveRecord {
@@ -46,8 +47,6 @@ export interface BudgetTemplate {
 export interface ProjectType {
   id: number;
   name: string;
-  pmHours?: number;
-  pdHours?: number;
   budgetTemplates?: BudgetTemplate[];
 }
 
@@ -80,6 +79,7 @@ export interface ProjectRoleBlock {
   roleName: string;
   roleHours: number;
   assignees: ProjectPerson[];
+  systemKey?: string | null;
 }
 
 export interface ProjectDetail {
@@ -141,7 +141,7 @@ export const api = {
   getProject: (id: number) => request<Project>(`/projects/${id}`),
   createProject: (data: Partial<Project>) =>
     request<Project>("/projects", { method: "POST", body: JSON.stringify(data) }),
-  updateProject: (id: number, data: Partial<Project>) =>
+  updateProject: (id: number, data: Record<string, any>) =>
     request<Project>(`/projects/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteProject: (id: number) =>
     request<{ success: boolean }>(`/projects/${id}`, { method: "DELETE" }),
@@ -162,13 +162,34 @@ export const api = {
   getProjectTypes: () => request<ProjectType[]>("/project-types"),
   updateProjectType: (
     id: number,
-    data: { pmHours?: number; pdHours?: number; roleHours?: Record<string, number> }
+    data: { name?: string; roleHours?: Record<string, number> }
   ) => request<ProjectType>(`/project-types/${id}`, { method: "PUT", body: JSON.stringify(data) }),
 
   // Planning
   getProjectDetail: (id: number) => request<ProjectDetail>(`/planning/project/${id}`),
   getEmployeePlanning: (id: number, status: string) =>
     request<EmployeePlanning>(`/planning/employee/${id}?status=${encodeURIComponent(status)}`),
+
+  createEmployee: (data: { name: string; email?: string | null; fte?: number; primaryRoleId?: number | null }) =>
+    request<Employee>("/employees", { method: "POST", body: JSON.stringify(data) }),
+  createProjectType: (data: { name: string }) =>
+    request<ProjectType>("/project-types", { method: "POST", body: JSON.stringify(data) }),
+  deleteRole: (id: number) =>
+    request<{ success: boolean }>(`/roles/${id}`, { method: "DELETE" }),
+  createRole: (data: { name: string }) =>
+    request<Role>("/roles", { method: "POST", body: JSON.stringify(data) }),
+  updateRole: (id: number, data: { name?: string }) =>
+    request<Role>(`/roles/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  assignEmployee: (projectId: number, employeeId: number, roleId: number) =>
+    request<{ success: boolean }>(`/planning/project/${projectId}/assign`, {
+      method: "POST",
+      body: JSON.stringify({ employeeId, roleId }),
+    }),
+  unassignEmployee: (projectId: number, employeeId: number, roleId: number) =>
+    request<{ success: boolean }>(
+      `/planning/project/${projectId}/assign?employeeId=${employeeId}&roleId=${roleId}`,
+      { method: "DELETE" }
+    ),
 
   // Other
   getRoles: () => request<Role[]>("/roles"),

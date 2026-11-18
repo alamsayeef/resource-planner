@@ -64,7 +64,7 @@ export default function ProjectsPage() {
 
   const handleSave = async (id: number, data: Record<string, any>) => {
     await api.updateProject(id, data);
-    queryClient.invalidateQueries({ queryKey: ["projects"] });
+    queryClient.invalidateQueries();
   };
 
   if (isLoading) {

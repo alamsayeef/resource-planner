@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.4.4] — 2026-11-18
+
+### Changed
+- Dropped the old separate PM/PD hour columns (`pm_hours`, `pd_hours`) from project types; PM/PD hours now come only from the Project Manager / Project Director roles in the Roles card
+- Reverted the PM/PD tags in the Roles card and the PM/PD dropdown rows in the Project tab (PM/PD are shown read-only at the top and changed on Overview, as before)
+- Removed the one-off migration script
+
+---
+
+## [0.4.3] — 2026-11-18
+
+### Changed
+- Roles named PM or PD are rejected (they have built-in hours columns); roles can now be removed with × on the Input tab (deactivated, hidden everywhere)
+
+---
+
+## [0.4.3] — 2026-11-18
+
+### Changed
+- **PM and PD are now roles** ("Project Manager", "Project Director", flagged by `Role.systemKey`) instead of separate hour columns. They appear in the Roles card (renamable, tagged PM/PD) and as one hours column each in the project types table
+- Project tab: PM/PD rows sit with the other roles and are single-person dropdowns (still editable on Overview); regular roles still allow several people
+- Planning logic reads PM/PD hours from their role's template; assigning someone to the PM/PD role via the assign endpoint is rejected
+- Migration script `server/prisma/migrate-pm-pd.ts` carried the old PM/PD hours into role templates (old `pm_hours`/`pd_hours` columns are now unused)
+
+---
+
+## [0.4.2] — 2026-11-18
+
+### Added
+- **Input tab:** "+ Add role" button. New roles get 50h in every existing project type and appear automatically in the Project tab, Employee primary-role dropdown and the hours table
+
+---
+
+## [0.4.1] — 2026-11-18
+
+### Added
+- **Input tab:** editable employee names, role names and project type names; "+ Add employee" and "+ Add project type" buttons (new types start at 50h per role/PM/PD)
+- **Project tab:** assign / remove employees per role ("+ Add employee" dropdown under each role, × to remove)
+- `POST/DELETE /api/planning/project/:id/assign`; `POST /api/employees`, `PUT /api/roles/:id` and project-type routes now validate and return friendly errors (duplicate names/emails)
+
+### Fixed
+- Overview inline edit of project **Type** was silently ignored by the API (`PUT /api/projects/:id` ignored `projectTypeId`)
+- Overview edits now refresh all tabs
+
+---
+
 ## [0.4.0] — 2026-11-18
 
 ### Summary

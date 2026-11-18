@@ -56,11 +56,11 @@ projectRoutes.post("/", async (req, res) => {
 });
 
 projectRoutes.put("/:id", async (req, res) => {
-  const { name, description, status, startDate, endDate, totalBudgetedHours, pmId, pdId, notes } = req.body;
+  const { name, description, status, startDate, endDate, totalBudgetedHours, pmId, pdId, notes, projectTypeId } = req.body;
   const project = await prisma.project.update({
     where: { id: Number(req.params.id) },
     data: {
-      name, description, status, notes, totalBudgetedHours, pmId, pdId,
+      name, description, status, notes, totalBudgetedHours, pmId, pdId, projectTypeId,
       ...(startDate && { startDate: new Date(startDate) }),
       ...(endDate && { endDate: new Date(endDate) }),
     },

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../../index";
+import { sortRoles } from "../roles/role.helpers";
 
 export const planningRoutes = Router();
 
@@ -76,7 +77,7 @@ async function buildRoster(projectId: number) {
   });
   if (!project) return null;
 
-  const roles = await prisma.role.findMany({ where: { isActive: true }, orderBy: { name: "asc" } });
+  const roles = sortRoles(await prisma.role.findMany({ where: { isActive: true } }));
   const ptype = project.projectType;
   const entries: Entry[] = [];
 
@@ -85,20 +86,29 @@ async function buildRoster(projectId: number) {
     const roleHours = tpl ? tpl.budgetedHours : 0;
     const seen = new Set<number>();
     const people: { id: number; name: string; fte: number }[] = [];
-    for (const a of project.assignments) {
-      if (a.roleId !== role.id || seen.has(a.employeeId)) continue;
-      seen.add(a.employeeId);
-      people.push(a.employee);
+    if (role.systemKey === "PM") {
+      if (project.pm) people.push(project.pm);
+    } else if (role.systemKey === "PD") {
+      if (project.pd) people.push(project.pd);
+    } else {
+      for (const a of project.assignments) {
+        if (a.roleId !== role.id || seen.has(a.employeeId)) continue;
+        seen.add(a.employeeId);
+        people.push(a.employee);
+      }
     }
     const share = people.length > 0 ? roleHours / people.length : 0;
     for (const p of people) entries.push({ employeeId: p.id, label: role.name, hours: share });
-    return { roleId: role.id, roleName: role.name, roleHours, share, people };
+    return { roleId: role.id, roleName: role.name, systemKey: role.systemKey, roleHours, share, people };
   });
 
-  const pmHours = ptype ? ptype.pmHours : 0;
-  const pdHours = ptype ? ptype.pdHours : 0;
-  if (project.pm) entries.push({ employeeId: project.pm.id, label: "PM", hours: pmHours });
-  if (project.pd) entries.push({ employeeId: project.pd.id, label: "PD", hours: pdHours });
+  // PM and PD are ordinary roles (flagged by systemKey) held by the project's PM / PD
+  const hoursFor = (key: string) => {
+    const b = roleBlocks.find((r) => r.systemKey === key);
+    return b ? b.roleHours : 0;
+  };
+  const pmHours = hoursFor("PM");
+  const pdHours = hoursFor("PD");
 
   return { project, roleBlocks, entries, pmHours, pdHours };
 }
@@ -135,7 +145,7 @@ planningRoutes.get("/project/:id", async (req, res) => {
     for (const rb of roleBlocks) {
       const assignees: any[] = [];
       for (const p of rb.people) assignees.push(await person(p, rb.share));
-      roles.push({ roleId: rb.roleId, roleName: rb.roleName, roleHours: rb.roleHours, assignees });
+      roles.push({ roleId: rb.roleId, roleName: rb.roleName, systemKey: rb.systemKey, roleHours: rb.roleHours, assignees });
     }
 
     res.json({
@@ -260,5 +270,52 @@ planningRoutes.get("/employee/:id", async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "Failed to compute employee planning" });
+  }
+});
+
+
+// ── POST /api/planning/project/:id/assign  { employeeId, roleId } ──
+planningRoutes.post("/project/:id/assign", async (req, res) => {
+  try {
+    const projectId = Number(req.params.id);
+    const employeeId = Number(req.body.employeeId);
+    const roleId = Number(req.body.roleId);
+    const project = await prisma.project.findUnique({ where: { id: projectId } });
+    const emp = await prisma.employee.findUnique({ where: { id: employeeId } });
+    const role = await prisma.role.findUnique({ where: { id: roleId } });
+    if (!project || !emp || !role) return res.status(404).json({ error: "Project, employee or role not found" });
+    if (role.systemKey) return res.status(400).json({ error: "PM and PD are set on the project itself, not assigned here" });
+    if (!emp.isActive) return res.status(400).json({ error: "Employee is inactive" });
+    await prisma.projectAssignment.upsert({
+      where: { projectId_employeeId_roleId: { projectId, employeeId, roleId } },
+      update: {},
+      create: {
+        projectId, employeeId, roleId,
+        allocatedHours: 0,
+        startDate: project.startDate,
+        endDate: project.endDate,
+      },
+    });
+    res.status(201).json({ success: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to assign employee" });
+  }
+});
+
+// ── DELETE /api/planning/project/:id/assign?employeeId=&roleId= ──
+planningRoutes.delete("/project/:id/assign", async (req, res) => {
+  try {
+    await prisma.projectAssignment.deleteMany({
+      where: {
+        projectId: Number(req.params.id),
+        employeeId: Number(req.query.employeeId),
+        roleId: Number(req.query.roleId),
+      },
+    });
+    res.json({ success: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to remove assignment" });
   }
 });

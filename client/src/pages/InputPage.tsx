@@ -5,12 +5,18 @@ import type { Employee, ProjectType, Role } from "../lib/api";
 
 const fieldClass =
   "text-sm border border-gray-300 rounded-lg px-2 py-1 focus:ring-2 focus:ring-pentag-accent focus:border-pentag-accent outline-none bg-white";
+const addBtn =
+  "text-xs px-3 py-1.5 rounded-lg bg-pentag-primary text-white hover:bg-pentag-dark disabled:opacity-40 disabled:cursor-not-allowed";
+const ghostBtn = "text-xs px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200";
 
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" });
 
+const fail = (e: any) => window.alert(e && e.message ? e.message : "Something went wrong");
+
 // ── One employee row ──
 function EmployeeRow({ emp, roles, onChanged }: { emp: Employee; roles: Role[]; onChanged: () => void }) {
+  const [name, setName] = useState(emp.name);
   const [fte, setFte] = useState(String(emp.fte ?? 1));
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
@@ -22,9 +28,16 @@ function EmployeeRow({ emp, roles, onChanged }: { emp: Employee; roles: Role[]; 
       await api.updateEmployee(emp.id, data);
       onChanged();
     } catch (e) {
-      console.error(e);
+      fail(e);
+      setName(emp.name);
     }
     setBusy(false);
+  };
+
+  const commitName = () => {
+    const n = name.trim();
+    if (!n) { setName(emp.name); return; }
+    if (n !== emp.name) save({ name: n });
   };
 
   const commitFte = () => {
@@ -45,7 +58,7 @@ function EmployeeRow({ emp, roles, onChanged }: { emp: Employee; roles: Role[]; 
       setEnd("");
       onChanged();
     } catch (e) {
-      console.error(e);
+      fail(e);
     }
     setBusy(false);
   };
@@ -56,15 +69,22 @@ function EmployeeRow({ emp, roles, onChanged }: { emp: Employee; roles: Role[]; 
       await api.deleteLeave(id);
       onChanged();
     } catch (e) {
-      console.error(e);
+      fail(e);
     }
     setBusy(false);
   };
 
   return (
     <tr className="align-top">
-      <td className="px-6 py-3 font-medium text-pentag-dark whitespace-nowrap">
-        {emp.name}
+      <td className="px-6 py-3 whitespace-nowrap">
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onBlur={commitName}
+          onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+          className={fieldClass + " w-44 font-medium text-pentag-dark"}
+        />
         {busy && <span className="ml-2 text-xs text-pentag-accent animate-pulse">Saving…</span>}
       </td>
       <td className="px-6 py-3">
@@ -116,24 +136,117 @@ function EmployeeRow({ emp, roles, onChanged }: { emp: Employee; roles: Role[]; 
           <input type="date" value={start} onChange={(e) => setStart(e.target.value)} className={fieldClass} />
           <span className="text-xs text-gray-400">to</span>
           <input type="date" value={end} min={start || undefined} onChange={(e) => setEnd(e.target.value)} className={fieldClass} />
-          <button
-            onClick={addLeave}
-            disabled={!start || !end || end < start}
-            className="text-xs px-3 py-1.5 rounded-lg bg-pentag-primary text-white hover:bg-pentag-dark disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            Add
-          </button>
+          <button onClick={addLeave} disabled={!start || !end || end < start} className={addBtn}>Add</button>
         </div>
       </td>
     </tr>
   );
 }
 
+// ── Add employee form ──
+function AddEmployeeForm({ roles, onDone }: { roles: Role[]; onDone: () => void }) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [fte, setFte] = useState("1");
+  const [roleId, setRoleId] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    const n = name.trim();
+    const f = parseFloat(fte);
+    if (!n || isNaN(f) || f < 0 || f > 1) {
+      window.alert("Enter a name and an FTE between 0 and 1.");
+      return;
+    }
+    setBusy(true);
+    try {
+      await api.createEmployee({ name: n, email: email.trim() || null, fte: f, primaryRoleId: roleId ? Number(roleId) : null });
+      onDone();
+    } catch (e) {
+      fail(e);
+    }
+    setBusy(false);
+  };
+
+  return (
+    <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex flex-wrap items-end gap-3">
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">Name</label>
+        <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={fieldClass + " w-44"} autoFocus />
+      </div>
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">Email (optional)</label>
+        <input type="text" value={email} onChange={(e) => setEmail(e.target.value)} className={fieldClass + " w-52"} />
+      </div>
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">Primary role</label>
+        <select value={roleId} onChange={(e) => setRoleId(e.target.value)} className={fieldClass}>
+          <option value="">— None —</option>
+          {roles.map((r) => (
+            <option key={r.id} value={String(r.id)}>{r.name}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">FTE</label>
+        <input type="number" min="0" max="1" step="0.1" value={fte} onChange={(e) => setFte(e.target.value)} className={fieldClass + " w-20"} />
+      </div>
+      <button onClick={submit} disabled={busy} className={addBtn}>Save employee</button>
+    </div>
+  );
+}
+
+// ── Role name row ──
+function RoleRow({ role, onChanged }: { role: Role; onChanged: () => void }) {
+  const [name, setName] = useState(role.name);
+  const commit = async () => {
+    const n = name.trim();
+    if (!n) { setName(role.name); return; }
+    if (n === role.name) return;
+    try {
+      await api.updateRole(role.id, { name: n });
+      onChanged();
+    } catch (e) {
+      fail(e);
+      setName(role.name);
+    }
+  };
+  return (
+    <div className="inline-flex items-center gap-1">
+      <input
+        type="text"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+        className={fieldClass + " w-48"}
+      />
+      <button
+        onClick={async () => {
+          if (!window.confirm("Remove role \"" + role.name + "\"? It will disappear from all tabs and from anyone's primary role.")) return;
+          try {
+            await api.deleteRole(role.id);
+            onChanged();
+          } catch (e) {
+            fail(e);
+          }
+        }}
+        className="text-gray-400 hover:text-red-600 px-1"
+        aria-label="Remove role"
+        title="Remove role"
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
 // ── One project type row ──
 function TypeRow({ pt, roles, onChanged }: { pt: ProjectType; roles: Role[]; onChanged: () => void }) {
   const dirty = useRef(false);
+  const [name, setName] = useState(pt.name);
   const [vals, setVals] = useState<Record<string, string>>(() => {
-    const v: Record<string, string> = { pm: String(pt.pmHours ?? 50), pd: String(pt.pdHours ?? 50) };
+    const v: Record<string, string> = {};
     roles.forEach((r) => {
       const t = (pt.budgetTemplates || []).find((b) => b.roleId === r.id);
       v["r" + r.id] = String(t ? t.budgetedHours : 0);
@@ -146,12 +259,23 @@ function TypeRow({ pt, roles, onChanged }: { pt: ProjectType; roles: Role[]; onC
     setVals((prev) => ({ ...prev, [k]: v }));
   };
 
+  const commitName = async () => {
+    const n = name.trim();
+    if (!n) { setName(pt.name); return; }
+    if (n === pt.name) return;
+    try {
+      await api.updateProjectType(pt.id, { name: n });
+      onChanged();
+    } catch (e) {
+      fail(e);
+      setName(pt.name);
+    }
+  };
+
   const commit = async () => {
     if (!dirty.current) return;
     dirty.current = false;
-    const pmHours = parseFloat(vals.pm);
-    const pdHours = parseFloat(vals.pd);
-    let valid = !isNaN(pmHours) && !isNaN(pdHours) && pmHours >= 0 && pdHours >= 0;
+    let valid = true;
     const roleHours: Record<string, number> = {};
     roles.forEach((r) => {
       const v = parseFloat(vals["r" + r.id]);
@@ -160,10 +284,10 @@ function TypeRow({ pt, roles, onChanged }: { pt: ProjectType; roles: Role[]; onC
     });
     if (!valid) return;
     try {
-      await api.updateProjectType(pt.id, { pmHours, pdHours, roleHours });
+      await api.updateProjectType(pt.id, { roleHours });
       onChanged();
     } catch (e) {
-      console.error(e);
+      fail(e);
     }
   };
 
@@ -175,7 +299,7 @@ function TypeRow({ pt, roles, onChanged }: { pt: ProjectType; roles: Role[]; onC
         type="number"
         min="0"
         step="1"
-        value={vals[k]}
+        value={vals[k] ?? ""}
         onChange={(e) => setVal(k, e.target.value)}
         onBlur={commit}
         onKeyDown={(e) => { if (e.key === "Enter") commit(); }}
@@ -186,7 +310,16 @@ function TypeRow({ pt, roles, onChanged }: { pt: ProjectType; roles: Role[]; onC
 
   return (
     <tr>
-      <td className="px-6 py-3 font-medium text-pentag-dark whitespace-nowrap">{pt.name}</td>
+      <td className="px-6 py-3 whitespace-nowrap">
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onBlur={commitName}
+          onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+          className={fieldClass + " w-44 font-medium text-pentag-dark"}
+        />
+      </td>
       {roles.map((r) => cell("r" + r.id))}
       {cell("pm")}
       {cell("pd")}
@@ -198,6 +331,11 @@ function TypeRow({ pt, roles, onChanged }: { pt: ProjectType; roles: Role[]; onC
 export default function InputPage() {
   const queryClient = useQueryClient();
   const refresh = () => { queryClient.invalidateQueries(); };
+  const [showAddEmp, setShowAddEmp] = useState(false);
+  const [showAddType, setShowAddType] = useState(false);
+  const [newType, setNewType] = useState("");
+  const [showAddRole, setShowAddRole] = useState(false);
+  const [newRole, setNewRole] = useState("");
 
   const { data: employees = [], isLoading } = useQuery<Employee[]>({
     queryKey: ["employees", "all"],
@@ -205,6 +343,32 @@ export default function InputPage() {
   });
   const { data: roles = [] } = useQuery<Role[]>({ queryKey: ["roles"], queryFn: api.getRoles });
   const { data: types = [] } = useQuery<ProjectType[]>({ queryKey: ["projectTypes"], queryFn: api.getProjectTypes });
+
+  const addType = async () => {
+    const n = newType.trim();
+    if (!n) return;
+    try {
+      await api.createProjectType({ name: n });
+      setNewType("");
+      setShowAddType(false);
+      refresh();
+    } catch (e) {
+      fail(e);
+    }
+  };
+
+  const addRole = async () => {
+    const n = newRole.trim();
+    if (!n) return;
+    try {
+      await api.createRole({ name: n });
+      setNewRole("");
+      setShowAddRole(false);
+      refresh();
+    } catch (e) {
+      fail(e);
+    }
+  };
 
   if (isLoading) {
     return <div className="text-center py-20 text-gray-400 text-lg">Loading…</div>;
@@ -214,13 +378,21 @@ export default function InputPage() {
     <div className="space-y-6">
       {/* Card 1: employees */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-pentag-dark">Employees</h2>
-          <p className="text-xs text-gray-400 mt-1">
-            Changes save automatically. Personal holidays are date ranges (weekends are skipped automatically).
-            Project-level role assignments are separate from the primary role.
-          </p>
+        <div className="px-6 py-4 border-b border-gray-100 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-pentag-dark">Employees</h2>
+            <p className="text-xs text-gray-400 mt-1">
+              Changes save automatically (names, FTE, status, role). Personal holidays are date ranges; weekends inside a
+              range are skipped. Renaming updates every tab. Project-level role assignments are done on the Project tab.
+            </p>
+          </div>
+          <button onClick={() => setShowAddEmp((v) => !v)} className={showAddEmp ? ghostBtn : addBtn}>
+            {showAddEmp ? "Cancel" : "+ Add employee"}
+          </button>
         </div>
+        {showAddEmp && (
+          <AddEmployeeForm roles={roles} onDone={() => { setShowAddEmp(false); refresh(); }} />
+        )}
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -241,15 +413,74 @@ export default function InputPage() {
         </div>
       </div>
 
-      {/* Card 2: project types x role hours */}
+      {/* Card 2: role names */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-pentag-dark">Project Types — Allocated Hours</h2>
-          <p className="text-xs text-gray-400 mt-1">
-            Hours per role for each project type. Role hours are split equally between everyone holding the role on a
-            project; PM and PD hours are separate and go to the project's PM and PD.
-          </p>
+        <div className="px-6 py-4 border-b border-gray-100 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-pentag-dark">Roles</h2>
+            <p className="text-xs text-gray-400 mt-1">
+              Rename roles by editing them in place; new names appear everywhere. The Project Manager and Project Director roles are held by each project's PM and PD. A new role gets 50 hours in every
+              project type (editable in the card below) and shows as unassigned on each project.
+            </p>
+          </div>
+          <button onClick={() => setShowAddRole((v) => !v)} className={showAddRole ? ghostBtn : addBtn}>
+            {showAddRole ? "Cancel" : "+ Add role"}
+          </button>
         </div>
+        {showAddRole && (
+          <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex flex-wrap items-end gap-3">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Role name</label>
+              <input
+                type="text"
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") addRole(); }}
+                className={fieldClass + " w-56"}
+                autoFocus
+              />
+            </div>
+            <button onClick={addRole} disabled={!newRole.trim()} className={addBtn}>Save role</button>
+          </div>
+        )}
+        <div className="px-6 py-4 flex flex-wrap gap-3">
+          {roles.map((r) => (
+            <RoleRow key={r.id + "-" + r.name} role={r} onChanged={refresh} />
+          ))}
+        </div>
+      </div>
+
+      {/* Card 3: project types x role hours */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-pentag-dark">Project Types — Allocated Hours</h2>
+            <p className="text-xs text-gray-400 mt-1">
+              Hours per role for each project type. Role hours are split equally between everyone holding the role on a
+              project. The Project Manager and Project Director roles are held by each project's PM and PD (one person each), who get those hours in full.
+            </p>
+          </div>
+          <button onClick={() => setShowAddType((v) => !v)} className={showAddType ? ghostBtn : addBtn}>
+            {showAddType ? "Cancel" : "+ Add project type"}
+          </button>
+        </div>
+        {showAddType && (
+          <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex flex-wrap items-end gap-3">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Project type name</label>
+              <input
+                type="text"
+                value={newType}
+                onChange={(e) => setNewType(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") addType(); }}
+                className={fieldClass + " w-56"}
+                autoFocus
+              />
+            </div>
+            <button onClick={addType} disabled={!newType.trim()} className={addBtn}>Save project type</button>
+            <span className="text-xs text-gray-400">New types start with 50 hours for every role.</span>
+          </div>
+        )}
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -264,8 +495,8 @@ export default function InputPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {types.map((pt) => (
-                <TypeRow key={pt.id} pt={pt} roles={roles} onChanged={refresh} />
+              {roles.length > 0 && types.map((pt) => (
+                <TypeRow key={pt.id + "-" + roles.length} pt={pt} roles={roles} onChanged={refresh} />
               ))}
             </tbody>
           </table>

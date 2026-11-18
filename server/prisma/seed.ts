@@ -26,6 +26,8 @@ async function main() {
 
   // ── Roles ──
   const roleNames = [
+    { name: "Project Manager", category: "Management", systemKey: "PM" },
+    { name: "Project Director", category: "Management", systemKey: "PD" },
     { name: "Role 1", category: "Technical" },
     { name: "Role 2", category: "Technical" },
     { name: "Role 3", category: "Technical" },

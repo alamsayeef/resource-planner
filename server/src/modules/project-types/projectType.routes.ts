@@ -4,6 +4,7 @@ import { prisma } from "../../index";
 export const projectTypeRoutes = Router();
 
 const typeInclude = { budgetTemplates: { include: { role: true } } };
+const dupMsg = "A project type with that name already exists";
 
 projectTypeRoutes.get("/", async (_req, res) => {
   const types = await prisma.projectType.findMany({
@@ -23,35 +24,36 @@ projectTypeRoutes.get("/:id", async (req, res) => {
   res.json(pt);
 });
 
+// New type: 50h default for every active role
 projectTypeRoutes.post("/", async (req, res) => {
-  const { name, description, defaultDurationWeeks, totalBudgetedHours, budgetTemplates } = req.body;
-  const pt = await prisma.projectType.create({
-    data: {
-      name, description, defaultDurationWeeks, totalBudgetedHours,
-      budgetTemplates: budgetTemplates
-        ? { create: budgetTemplates.map((t: any) => ({ roleId: t.roleId, budgetedHours: t.budgetedHours })) }
-        : undefined,
-    },
-    include: { budgetTemplates: true },
-  });
-  res.status(201).json(pt);
+  try {
+    const name = String(req.body.name || "").trim();
+    if (!name) return res.status(400).json({ error: "Name is required" });
+    const roles = await prisma.role.findMany({ where: { isActive: true } });
+    const pt = await prisma.projectType.create({
+      data: {
+        name,
+        description: req.body.description,
+        budgetTemplates: { create: roles.map((r) => ({ roleId: r.id, budgetedHours: 50 })) },
+      },
+      include: typeInclude,
+    });
+    res.status(201).json(pt);
+  } catch (e: any) {
+    console.error(e);
+    res.status(400).json({ error: e.code === "P2002" ? dupMsg : "Failed to create project type" });
+  }
 });
 
-// Update PM/PD hours and per-role hours for a project type
-// body: { pmHours?: number, pdHours?: number, roleHours?: { [roleId]: hours } }
+// body: { name?, roleHours?: { [roleId]: hours } }
 projectTypeRoutes.put("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const { pmHours, pdHours, roleHours } = req.body;
+    const { name, roleHours } = req.body;
 
-    if (pmHours !== undefined || pdHours !== undefined) {
-      await prisma.projectType.update({
-        where: { id },
-        data: {
-          ...(pmHours !== undefined && { pmHours: Number(pmHours) }),
-          ...(pdHours !== undefined && { pdHours: Number(pdHours) }),
-        },
-      });
+    if (name !== undefined) {
+      if (!String(name).trim()) return res.status(400).json({ error: "Name cannot be empty" });
+      await prisma.projectType.update({ where: { id }, data: { name: String(name).trim() } });
     }
 
     if (roleHours) {
@@ -68,8 +70,8 @@ projectTypeRoutes.put("/:id", async (req, res) => {
 
     const pt = await prisma.projectType.findUnique({ where: { id }, include: typeInclude });
     res.json(pt);
-  } catch (e) {
+  } catch (e: any) {
     console.error(e);
-    res.status(500).json({ error: "Failed to update project type" });
+    res.status(400).json({ error: e.code === "P2002" ? dupMsg : "Failed to update project type" });
   }
 });

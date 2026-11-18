@@ -227,7 +227,7 @@ Overview (former Projects tab) · Project · Employee · Input. Tabs are indepen
 
 ### 11.2 Hours allocation
 - Roles are fixed: Role 1-4. Hours per role per project type are edited on the Input tab (default 50).
-- PM and PD have their own separate hours per project type (default 50) and are given to the project's PM / PD.
+- Project Manager and Project Director are roles (`Role.systemKey` = PM / PD) with hours per project type like any other role. Each is held by exactly one person per project: the project's PM / PD.
 - Role hours are split equally between all employees assigned to that role on the project. A PM/PD who also holds a technical role counts as one of the holders.
 - An employee's total hours on a project are spread equally across their working days within the project dates.
 - Working days = Mon-Fri minus public/UoE closure days minus the employee's personal leave.

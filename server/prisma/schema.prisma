@@ -12,6 +12,7 @@ model Role {
   name        String    @unique
   description String?
   category    String    @default("Technical")
+  systemKey   String?   @unique @map("system_key")
   isActive    Boolean   @default(true) @map("is_active")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
@@ -105,9 +106,6 @@ model ProjectType {
 
   budgetTemplates RoleBudgetTemplate[]
   projects        Project[]
-
-  pmHours Float @default(50) @map("pm_hours")
-  pdHours Float @default(50) @map("pd_hours")
 
   @@map("project_types")
 }
