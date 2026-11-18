@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { api, Project } from "../lib/api";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { api, Project, Employee, ProjectType } from "../lib/api";
 import ProjectFilters from "../components/ProjectFilters";
 import ProjectGrid from "../components/ProjectGrid";
 import GanttChart from "../components/GanttChart";
@@ -21,10 +21,21 @@ const defaultFilters: Filters = {
 
 export default function ProjectsPage() {
   const [filters, setFilters] = useState<Filters>(defaultFilters);
+  const queryClient = useQueryClient();
 
   const { data: projects = [], isLoading, error } = useQuery<Project[]>({
     queryKey: ["projects"],
     queryFn: api.getProjects,
+  });
+
+  const { data: employees = [] } = useQuery<Employee[]>({
+    queryKey: ["employees"],
+    queryFn: api.getEmployees,
+  });
+
+  const { data: projectTypes = [] } = useQuery<ProjectType[]>({
+    queryKey: ["projectTypes"],
+    queryFn: api.getProjectTypes,
   });
 
   // Apply all filters
@@ -49,6 +60,11 @@ export default function ProjectsPage() {
     Ongoing:   { bg: "bg-emerald-50",  text: "text-emerald-700", border: "border-emerald-200" },
     Completed: { bg: "bg-gray-50",     text: "text-gray-700",    border: "border-gray-200" },
     Incoming:  { bg: "bg-blue-50",     text: "text-blue-700",    border: "border-blue-200" },
+  };
+
+  const handleSave = async (id: number, data: Record<string, any>) => {
+    await api.updateProject(id, data);
+    queryClient.invalidateQueries({ queryKey: ["projects"] });
   };
 
   if (isLoading) {
@@ -113,7 +129,12 @@ export default function ProjectsPage() {
       />
 
       {/* Project Grid */}
-      <ProjectGrid projects={filtered} />
+      <ProjectGrid
+        projects={filtered}
+        employees={employees}
+        projectTypes={projectTypes}
+        onSave={handleSave}
+      />
 
       {/* Gantt Chart */}
       <GanttChart projects={filtered} />
