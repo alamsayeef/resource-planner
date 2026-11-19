@@ -11,7 +11,7 @@ interface Props {
 const PAGE_OPTIONS = [5, 10, 25, 50];
 const STATUSES = ["Ongoing", "Incoming", "Completed", "Removed"];
 
-type SortKey = "id" | "name" | "type" | "status" | "pm" | "pd" | "startDate" | "endDate";
+type SortKey = "id" | "code" | "name" | "type" | "status" | "pm" | "pd" | "startDate" | "endDate";
 type SortDir = "asc" | "desc";
 
 interface EditState {
@@ -47,6 +47,7 @@ export default function ProjectGrid({ projects, employees, projectTypes, onSave 
       let valB: any;
       switch (sortKey) {
         case "id":        valA = a.id; valB = b.id; break;
+        case "code":      valA = (a.code || "").toLowerCase(); valB = (b.code || "").toLowerCase(); break;
         case "name":      valA = a.name.toLowerCase(); valB = b.name.toLowerCase(); break;
         case "type":      valA = (a.projectType?.name || "").toLowerCase(); valB = (b.projectType?.name || "").toLowerCase(); break;
         case "status":    valA = a.status.toLowerCase(); valB = b.status.toLowerCase(); break;
@@ -95,6 +96,9 @@ export default function ProjectGrid({ projects, employees, projectTypes, onSave 
     try {
       const payload: Record<string, any> = {};
       switch (editing.field) {
+        case "code":
+          payload.code = editing.value;
+          break;
         case "name":
           payload.name = editing.value;
           break;
@@ -120,6 +124,7 @@ export default function ProjectGrid({ projects, employees, projectTypes, onSave 
       await onSave(editing.rowId, payload);
     } catch (e) {
       console.error("Save failed:", e);
+      window.alert(e instanceof Error ? e.message : "Save failed");
     }
 
     setSaving(false);
@@ -166,6 +171,7 @@ export default function ProjectGrid({ projects, employees, projectTypes, onSave 
   const renderCell = (p: Project, field: string) => {
     if (isEditing(p.id, field)) {
       switch (field) {
+        case "code":
         case "name":
           return (
             <input
@@ -246,6 +252,15 @@ export default function ProjectGrid({ projects, employees, projectTypes, onSave 
 
     // Display mode
     switch (field) {
+      case "code":
+        return (
+          <span
+            className="font-mono text-gray-700 cursor-pointer hover:bg-pentag-accent/10 px-1 -mx-1 rounded"
+            onClick={() => startEdit(p.id, "code", p.code || "")}
+          >
+            {p.code || "—"}
+          </span>
+        );
       case "name":
         return (
           <span
@@ -331,7 +346,8 @@ export default function ProjectGrid({ projects, employees, projectTypes, onSave 
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 text-left">
-              <th className={headerClass + " w-16"} onClick={() => handleSort("id")}>ID{sortArrow("id")}</th>
+              <th className={headerClass + " w-16"} onClick={() => handleSort("id")}>#{sortArrow("id")}</th>
+              <th className={headerClass} onClick={() => handleSort("code")}>ID{sortArrow("code")}</th>
               <th className={headerClass} onClick={() => handleSort("name")}>Project Title{sortArrow("name")}</th>
               <th className={headerClass} onClick={() => handleSort("type")}>Type{sortArrow("type")}</th>
               <th className={headerClass} onClick={() => handleSort("status")}>Status{sortArrow("status")}</th>
@@ -344,7 +360,7 @@ export default function ProjectGrid({ projects, employees, projectTypes, onSave 
           <tbody className="divide-y divide-gray-100">
             {pageData.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-6 py-8 text-center text-gray-400">
+                <td colSpan={9} className="px-6 py-8 text-center text-gray-400">
                   No projects found.
                 </td>
               </tr>
@@ -352,6 +368,7 @@ export default function ProjectGrid({ projects, employees, projectTypes, onSave 
               pageData.map((p) => (
                 <tr key={p.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-3 text-gray-500 font-mono">{p.id}</td>
+                  <td className="px-6 py-3">{renderCell(p, "code")}</td>
                   <td className="px-6 py-3">{renderCell(p, "name")}</td>
                   <td className="px-6 py-3">{renderCell(p, "type")}</td>
                   <td className="px-6 py-3">{renderCell(p, "status")}</td>

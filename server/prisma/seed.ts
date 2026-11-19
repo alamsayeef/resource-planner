@@ -26,8 +26,8 @@ async function main() {
 
   // ── Roles ──
   const roleNames = [
-    { name: "Project Manager", category: "Management", systemKey: "PM" },
-    { name: "Project Director", category: "Management", systemKey: "PD" },
+    { name: "PM", category: "Management", systemKey: "PM" },
+    { name: "PD", category: "Management", systemKey: "PD" },
     { name: "Role 1", category: "Technical" },
     { name: "Role 2", category: "Technical" },
     { name: "Role 3", category: "Technical" },
@@ -291,28 +291,7 @@ async function main() {
     });
   };
 
-  const holders: Record<string, string[]> = {
-    "Role 1": ["Employee 1", "Employee 2"],
-    "Role 2": ["Employee 3", "Employee 6"],
-    "Role 3": ["Employee 4"],
-    "Role 4": ["Employee 5"],
-  };
-  const liveProjects = await prisma.project.findMany({ orderBy: { id: "asc" } });
-  let counter = 0;
-  for (const p of liveProjects) {
-    if (p.status === "Removed") continue;
-    counter++;
-    for (const rn of Object.keys(holders)) {
-      const names = counter % 2 === 0 ? holders[rn] : holders[rn].slice(0, 1);
-      for (const en of names) {
-        const emp = allEmployees.find((e) => e.name === en);
-        if (emp) await upsertAssignment(p, emp.id, roleId(rn));
-      }
-    }
-    // some PMs also hold a technical role (shared with the others)
-    if (p.pmId && counter % 3 === 0) await upsertAssignment(p, p.pmId, roleId("Role 1"));
-  }
-  console.log("  Assignments seeded");
+  console.log("  Assignments skipped (assign on the Project tab)");
 
   const e1 = allEmployees.find((e) => e.name === "Employee 1");
   const e3 = allEmployees.find((e) => e.name === "Employee 3");

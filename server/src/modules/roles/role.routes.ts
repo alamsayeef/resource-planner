@@ -16,7 +16,6 @@ roleRoutes.post("/", async (req, res) => {
   try {
     const name = String(req.body.name || "").trim();
     if (!name) return res.status(400).json({ error: "Name is required" });
-    if (["PM", "PD"].includes(name.toUpperCase())) return res.status(400).json({ error: "PM and PD are built in and have their own hours column" });
     const role = await prisma.role.create({ data: { name, category: req.body.category || "Technical" } });
     const types = await prisma.projectType.findMany();
     for (const t of types) {
@@ -38,7 +37,6 @@ roleRoutes.put("/:id", async (req, res) => {
     if (req.body.name !== undefined) {
       const name = String(req.body.name).trim();
       if (!name) return res.status(400).json({ error: "Name cannot be empty" });
-      if (["PM", "PD"].includes(name.toUpperCase())) return res.status(400).json({ error: "PM and PD are built in and have their own hours column" });
       data.name = name;
     }
     if (req.body.description !== undefined) data.description = req.body.description;
@@ -53,6 +51,8 @@ roleRoutes.put("/:id", async (req, res) => {
 roleRoutes.delete("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
+    const target = await prisma.role.findUnique({ where: { id } });
+    if (target && target.systemKey) return res.status(400).json({ error: "The PM and PD roles can't be removed" });
     await prisma.employee.updateMany({ where: { primaryRoleId: id }, data: { primaryRoleId: null } });
     await prisma.role.update({ where: { id }, data: { isActive: false } });
     res.json({ success: true });

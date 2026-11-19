@@ -321,8 +321,6 @@ function TypeRow({ pt, roles, onChanged }: { pt: ProjectType; roles: Role[]; onC
         />
       </td>
       {roles.map((r) => cell("r" + r.id))}
-      {cell("pm")}
-      {cell("pd")}
       <td className="px-4 py-3 text-gray-600 font-medium">{total.toFixed(0)}</td>
     </tr>
   );
@@ -419,7 +417,7 @@ export default function InputPage() {
           <div>
             <h2 className="text-lg font-semibold text-pentag-dark">Roles</h2>
             <p className="text-xs text-gray-400 mt-1">
-              Rename roles by editing them in place; new names appear everywhere. The Project Manager and Project Director roles are held by each project's PM and PD. A new role gets 50 hours in every
+              Rename roles by editing them in place; new names appear everywhere. The PM and PD roles are held by each project's PM and PD. A new role gets 50 hours in every
               project type (editable in the card below) and shows as unassigned on each project.
             </p>
           </div>
@@ -457,7 +455,7 @@ export default function InputPage() {
             <h2 className="text-lg font-semibold text-pentag-dark">Project Types — Allocated Hours</h2>
             <p className="text-xs text-gray-400 mt-1">
               Hours per role for each project type. Role hours are split equally between everyone holding the role on a
-              project. The Project Manager and Project Director roles are held by each project's PM and PD (one person each), who get those hours in full.
+              project. The PM and PD roles are held by each project's PM and PD (one person each), who get those hours in full.
             </p>
           </div>
           <button onClick={() => setShowAddType((v) => !v)} className={showAddType ? ghostBtn : addBtn}>
@@ -489,8 +487,6 @@ export default function InputPage() {
                 {roles.map((r) => (
                   <th key={r.id} className="px-4 py-3 font-medium">{r.name}</th>
                 ))}
-                <th className="px-4 py-3 font-medium">PM</th>
-                <th className="px-4 py-3 font-medium">PD</th>
                 <th className="px-4 py-3 font-medium">Total</th>
               </tr>
             </thead>

@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.4.5] — 2026-11-19
+
+### Added
+- **Overview grid:** the auto-number column is now "#"; a new user-editable "ID" column (`Project.code`) takes letters and numbers only, must be unique, and can be left blank
+
+---
+
 ## [0.4.4] — 2026-11-18
 
 ### Changed

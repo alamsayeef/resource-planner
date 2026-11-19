@@ -54,6 +54,7 @@ export interface Project {
   id: number;
   name: string;
   description: string | null;
+  code: string | null;
   status: string;
   startDate: string;
   endDate: string;

@@ -56,17 +56,33 @@ projectRoutes.post("/", async (req, res) => {
 });
 
 projectRoutes.put("/:id", async (req, res) => {
-  const { name, description, status, startDate, endDate, totalBudgetedHours, pmId, pdId, notes, projectTypeId } = req.body;
-  const project = await prisma.project.update({
-    where: { id: Number(req.params.id) },
-    data: {
-      name, description, status, notes, totalBudgetedHours, pmId, pdId, projectTypeId,
-      ...(startDate && { startDate: new Date(startDate) }),
-      ...(endDate && { endDate: new Date(endDate) }),
-    },
-    include: projectIncludes,
-  });
-  res.json(project);
+  try {
+    const { name, description, status, startDate, endDate, totalBudgetedHours, pmId, pdId, notes, projectTypeId, code } = req.body;
+
+    let codeValue: string | null | undefined = undefined;
+    if (code !== undefined) {
+      const c = String(code ?? "").trim();
+      if (c === "") codeValue = null;
+      else if (!/^[A-Za-z0-9]+$/.test(c)) {
+        return res.status(400).json({ error: "Project ID can only contain letters and numbers" });
+      } else codeValue = c;
+    }
+
+    const project = await prisma.project.update({
+      where: { id: Number(req.params.id) },
+      data: {
+        name, description, status, notes, totalBudgetedHours, pmId, pdId, projectTypeId,
+        code: codeValue,
+        ...(startDate && { startDate: new Date(startDate) }),
+        ...(endDate && { endDate: new Date(endDate) }),
+      },
+      include: projectIncludes,
+    });
+    res.json(project);
+  } catch (e: any) {
+    console.error(e);
+    res.status(400).json({ error: e.code === "P2002" ? "That project ID is already used by another project" : "Failed to update project" });
+  }
 });
 
 projectRoutes.delete("/:id", async (req, res) => {

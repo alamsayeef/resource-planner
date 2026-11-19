@@ -128,6 +128,7 @@ model Project {
   name               String
   description        String?
   projectTypeId      Int?     @map("project_type_id")
+  code               String?  @unique @map("project_code")
   status             String   @default("Draft")
   startDate          DateTime @map("start_date")
   endDate            DateTime @map("end_date")
